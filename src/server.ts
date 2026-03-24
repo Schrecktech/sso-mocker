@@ -3,6 +3,7 @@ import { createProvider } from './oidc/provider.js';
 import { mountInteractions } from './oidc/interactions.js';
 import { healthHandler } from './health.js';
 import { loadConfig } from './config/loader.js';
+import { createAdminRouter } from './admin/router.js';
 import type { AppConfig, User } from './config/schema.js';
 import path from 'node:path';
 import type Provider from 'oidc-provider';
@@ -81,6 +82,13 @@ export async function createMocker(options: CreateMockerOptions = {}): Promise<M
     getUsers: () => users,
     getLoginMode: () => ({ mode: config.login.mode, autoLoginUser: config.login.autoLoginUser }),
   });
+
+  // Admin API
+  if (config.admin.enabled) {
+    const adminRouter = createAdminRouter({ config, users });
+    provider.use(adminRouter.routes() as any);
+    provider.use(adminRouter.allowedMethods() as any);
+  }
 
   provider.use(router.routes() as any);
   provider.use(router.allowedMethods() as any);
