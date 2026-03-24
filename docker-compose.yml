@@ -1,0 +1,8 @@
+services:
+  sso-mocker:
+    build: .
+    ports:
+      - "9090:9090"
+    environment:
+      SSO_MOCKER_ENV: development
+      SSO_MOCKER_LOGIN_MODE: form

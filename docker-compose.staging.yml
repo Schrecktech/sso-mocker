@@ -1,0 +1,17 @@
+services:
+  sso-mocker:
+    build: .
+    deploy:
+      replicas: 2
+    ports:
+      - "9090:9090"
+    environment:
+      SSO_MOCKER_ENV: staging
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
