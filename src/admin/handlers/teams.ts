@@ -25,7 +25,7 @@ export function createTeamHandlers(state: AdminState) {
     },
 
     create(ctx: Context): void {
-      const parsed = CreateTeamBody.safeParse(ctx.request.body);
+      const parsed = CreateTeamBody.safeParse((ctx.request as any).body);
       if (!parsed.success) {
         ctx.status = 400;
         ctx.body = { error: formatZodError(parsed.error) };
@@ -55,7 +55,7 @@ export function createTeamHandlers(state: AdminState) {
         return;
       }
 
-      const parsed = PatchTeamBody.safeParse(ctx.request.body);
+      const parsed = PatchTeamBody.safeParse((ctx.request as any).body);
       if (!parsed.success) {
         ctx.status = 400;
         ctx.body = { error: formatZodError(parsed.error) };

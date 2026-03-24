@@ -42,7 +42,7 @@ export function createUserHandlers(state: AdminState) {
     },
 
     create(ctx: Context): void {
-      const parsed = CreateUserBody.safeParse(ctx.request.body);
+      const parsed = CreateUserBody.safeParse((ctx.request as any).body);
       if (!parsed.success) {
         ctx.status = 400;
         ctx.body = { error: formatZodError(parsed.error) };
@@ -101,7 +101,7 @@ export function createUserHandlers(state: AdminState) {
         return;
       }
 
-      const parsed = PatchUserBody.safeParse(ctx.request.body);
+      const parsed = PatchUserBody.safeParse((ctx.request as any).body);
       if (!parsed.success) {
         ctx.status = 400;
         ctx.body = { error: formatZodError(parsed.error) };

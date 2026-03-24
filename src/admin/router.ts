@@ -174,7 +174,7 @@ export function createAdminRouter({ config, users }: AdminRouterOptions): Router
 
   // Patch login config
   router.patch('/config/login', (ctx) => {
-    const parsed = PatchLoginConfigBody.safeParse(ctx.request.body);
+    const parsed = PatchLoginConfigBody.safeParse((ctx.request as any).body);
     if (!parsed.success) {
       ctx.status = 400;
       ctx.body = { error: formatZodError(parsed.error) };

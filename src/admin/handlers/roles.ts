@@ -25,7 +25,7 @@ export function createRoleHandlers(state: AdminState) {
     },
 
     create(ctx: Context): void {
-      const parsed = CreateRoleBody.safeParse(ctx.request.body);
+      const parsed = CreateRoleBody.safeParse((ctx.request as any).body);
       if (!parsed.success) {
         ctx.status = 400;
         ctx.body = { error: formatZodError(parsed.error) };
@@ -55,7 +55,7 @@ export function createRoleHandlers(state: AdminState) {
         return;
       }
 
-      const parsed = PatchRoleBody.safeParse(ctx.request.body);
+      const parsed = PatchRoleBody.safeParse((ctx.request as any).body);
       if (!parsed.success) {
         ctx.status = 400;
         ctx.body = { error: formatZodError(parsed.error) };
