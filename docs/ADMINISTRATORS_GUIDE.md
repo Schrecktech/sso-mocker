@@ -88,9 +88,15 @@ roles:                              # Role definitions with scopes
     name: "Administrator"
     scopes: ["*"]                   # Wildcard = all scopes
 
+cors:
+  allowedOrigins: []                # Empty = allow all origins; set for staging/prod
+
+logging:
+  level: "info"                     # "debug" | "info" | "warn" | "error"
+
 admin:
   enabled: true                     # false = Admin API returns 404
-  apiKey: null                      # null = no auth; set for staging/prod
+  apiKey: null                      # null = no auth (REJECTED in production mode)
 ```
 
 ### Environment Variable Mapping
@@ -271,12 +277,15 @@ When running multiple replicas:
 
 ## Production Environment
 
-Production mode has special restrictions:
+"Production deployment" means deploying the mock as shared infrastructure for other teams' non-production environments, not as a real identity provider for end users.
+
+Production mode has special restrictions enforced at startup:
 
 1. **No user fixtures** — the server refuses to start if `fixtures/production.users.yaml` exists or if any config file defines users
 2. **Admin API only** — all user/role/team management happens through the Admin API
-3. **API key required** — set `admin.apiKey` or `ADMIN_API_KEY` to protect the Admin API
+3. **API key required** — the server refuses to start if `admin.enabled=true` and `admin.apiKey` is null/empty. Error: `Admin API must be secured with an API key in production mode.`
 4. **Stable signing keys** — must be provided explicitly via `SIGNING_KEYS_JSON` (auto-generation is not suitable for production)
+5. **Auto-login user validation** — if `login.mode=auto`, the `autoLoginUser` must reference an existing user or the server refuses to start
 
 ### Generating Signing Keys
 

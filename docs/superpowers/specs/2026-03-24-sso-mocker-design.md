@@ -18,8 +18,9 @@ SSO Mocker is a configurable OIDC (OpenID Connect) identity provider built on to
 
 ### Non-Goals
 
-- Replacing a real IdP in production (this is a mock)
+- Replacing a real IdP in production (this is a mock; "production deployment" refers to deploying the mock as shared infrastructure for other teams' non-production environments, not as a real identity provider for end users)
 - SAML support (OIDC only)
+- Multi-tenancy (single tenant per deployment)
 - Performance/load testing targets (it needs to work, not be fast at scale)
 
 ---
@@ -143,6 +144,7 @@ clients:
       - "http://localhost:3000/callback"
     grantTypes:
       - "authorization_code"
+    scopes: []                    # Empty = all scopes allowed
     tokenEndpointAuthMethod: "none"
 
   - clientId: "my-backend"
@@ -176,9 +178,15 @@ roles:
     name: "Viewer"
     scopes: ["read:*"]
 
+cors:
+  allowedOrigins: []              # Empty = allow all origins (*)
+
+logging:
+  level: "info"                   # "debug" | "info" | "warn" | "error"
+
 admin:
   enabled: true
-  apiKey: null                    # null = no auth required
+  apiKey: null                    # null = no auth required (rejected in production)
 ```
 
 ### Fixture File (e.g., fixtures/development.users.yaml)
@@ -281,12 +289,52 @@ When a user authenticates, the ID token and userinfo endpoint return:
 | `SSO_MOCKER_STORAGE_ADAPTER` | `storage.adapter` | `redis` |
 | `REDIS_URL` | `storage.redis.url` | `redis://localhost:6379` |
 | `SIGNING_KEYS_JSON` | `signing.keys` | `[{"kty":"RSA",...}]` |
+| `ADMIN_API_KEY` | `admin.apiKey` | `my-secret-key` |
 
 ### Validation
 
 All config is validated at startup via Zod schemas. Invalid config = immediate error with a clear message.
 
 `${ENV_VAR}` references are resolved at load time. Missing required vars fail fast at startup.
+
+### Startup Safety Checks
+
+In addition to schema validation, the following checks run at startup:
+
+1. **Production fixture gate:** If `SSO_MOCKER_ENV=production` and user fixtures exist in any config or fixture file, the server refuses to start.
+2. **Production Admin API auth gate:** If `SSO_MOCKER_ENV=production` and `admin.enabled=true` and `admin.apiKey` is null/empty, the server refuses to start with: `Error: Admin API must be secured with an API key in production mode.`
+3. **Auto-login user validation:** If `login.mode=auto` and `login.autoLoginUser` references a user ID that does not exist in the loaded fixtures or store, the server refuses to start with: `Error: autoLoginUser 'xyz' does not exist. Available users: alice, bob, carol.` At runtime, if the auto-login user is changed via `PATCH /admin/v1/config/login` to a non-existent user, the endpoint returns `400` with a validation error. If the auto-login user is deleted via `DELETE /admin/v1/users/:id` while it is the active auto-login user, the delete succeeds but the login mode automatically falls back to `form` and a warning is logged.
+
+### Scope Resolution
+
+Scopes follow a hierarchical naming convention using `:` as a separator (e.g., `read:repos`, `write:invoices`).
+
+**Scope registry:** The canonical set of scopes is the union of all scopes defined across all teams and all clients in the loaded configuration. There is no separate scope registry file — the config IS the registry. When a new team or client is created via Admin API, any new scopes it introduces are automatically added to the registry.
+
+**Wildcard matching:**
+- `*` matches all scopes in the registry
+- `read:*` matches all scopes starting with `read:` (one level — `read:repos` matches, `read:repos:private` also matches)
+- Wildcards are only valid in role and team scope definitions, NOT in token claims or client scope requests
+
+**Expansion timing:** Wildcards are expanded at **token-build time** (when the user authenticates), not at user creation time. This means if a new team with new scopes is added after a user with `role: admin` (scopes: `["*"]`) was created, the admin user's next authentication will include the new scopes.
+
+**What lands in tokens:** Tokens contain **only fully expanded concrete scopes**, never wildcards. Example: a user with role `admin` (scopes: `["*"]`) gets a token with `scopes: ["read:repos", "write:repos", "read:ci", "read:invoices", "write:invoices"]`.
+
+The `effectiveScopes` field in Admin API responses also returns fully expanded scopes.
+
+### Scope Negotiation
+
+When a token is issued, the final scopes are determined by the intersection of three inputs:
+
+1. **Requested scopes** — the `scope` parameter on the `/authorize` or `/token` request
+2. **Client-allowed scopes** — the `scopes` array on the client definition (empty = all allowed)
+3. **User effective scopes** — the expanded union of the user's role scopes + team scopes (for user-based flows only; client credentials uses client scopes only)
+
+The resulting token scopes = requested scopes INTERSECTED WITH client-allowed scopes INTERSECTED WITH user effective scopes.
+
+If no `scope` parameter is provided on the request, the default is the full set of client-allowed scopes intersected with user effective scopes.
+
+For client credentials flow (no user), the token scopes = requested scopes INTERSECTED WITH client-allowed scopes.
 
 ---
 
@@ -373,6 +421,36 @@ tokens:
     ttl: 86400
     enabled: true
 ```
+
+### Consent
+
+Consent is **auto-granted** for all interactions. Since this is a mock provider, there is no consent screen. `oidc-provider`'s consent interaction is configured to approve automatically without user interaction.
+
+### Refresh Tokens
+
+When `tokens.refreshToken.enabled: true`:
+
+- **Rotation:** Enabled by default. Each time a refresh token is used, a new one is issued and the old one is invalidated. This matches production IdP behavior and tests that apps handle rotation correctly.
+- **Revocation on user delete:** When a user is deleted via Admin API, all their outstanding tokens (access, refresh) and sessions are invalidated immediately.
+- **Revocation on reset:** `POST /admin/v1/reset` clears ALL state including tokens, sessions, and authorization codes (see Section 4).
+
+### CORS
+
+SPAs on a different origin (e.g., `localhost:3000`) need to make cross-origin requests to the mocker (e.g., `localhost:9090`). CORS is enabled on the following endpoints:
+
+- `/token` — SPA token exchange
+- `/userinfo` — SPA userinfo requests
+- `/.well-known/openid-configuration` — SPA discovery
+- `/jwks` — SPA key verification
+
+Default CORS configuration allows all origins (`*`). This is acceptable because this is a mock provider, not a production IdP. For staging/demo environments where stricter CORS is desired:
+
+```yaml
+cors:
+  allowedOrigins: ["https://staging-app.example.com"]
+```
+
+If `cors.allowedOrigins` is not set or empty, all origins are allowed.
 
 ### OIDC Discovery
 
@@ -469,6 +547,15 @@ POST   /admin/v1/reset/roles        # Reset only roles
 POST   /admin/v1/reset/teams        # Reset only teams
 POST   /admin/v1/reset/clients      # Reset only clients
 ```
+
+**Reset behavior:** `POST /admin/v1/reset` performs a **full state wipe**:
+- All users, roles, teams, and clients are restored to the config file baseline
+- All issued tokens (access tokens, refresh tokens, ID tokens) are invalidated
+- All active sessions are destroyed
+- All in-flight authorization codes are cleared
+- The storage adapter (memory or Redis) is flushed for OIDC-managed state
+
+This ensures complete test isolation — after a reset, no state from a previous test survives. Partial resets (e.g., `/reset/users`) only reset the specified resource type but also invalidate tokens/sessions belonging to affected entities.
 
 **Runtime Configuration:**
 
@@ -670,7 +757,9 @@ await mocker.stop();
 
 ### Docker Image
 
-Multi-stage build on `node:22-alpine`. Runs as non-root user (`mocker:1001`). Built-in healthcheck via `wget` to `/health`. Default entrypoint starts the server with `--env integration`.
+Multi-stage build on `node:22-alpine`. Runs as non-root user (`mocker:1001`). Built-in healthcheck via `wget` to `/health` (alpine includes `wget` but not `curl`). Default entrypoint starts the server with `--env integration`.
+
+**Healthcheck note:** The Docker image's internal `HEALTHCHECK` uses `wget -qO- http://localhost:9090/health` because alpine ships with `wget`, not `curl`. GitHub Actions service container health commands run on the runner (which has `curl`), so they use `curl -f http://localhost:9090/.well-known/openid-configuration`. Both are valid — the `/health` endpoint is lighter, but the discovery endpoint also confirms OIDC is ready.
 
 ```bash
 docker run ghcr.io/myorg/sso-mocker:latest                              # Default
@@ -937,18 +1026,41 @@ sso-mocker/
 
 ## 10. Open TODOs
 
+### Implementation TODOs
+
 - [ ] **CI gate: prevent PR merge if production fixtures contain users** - `scripts/check-no-production-fixtures.js` + required status check on the repo
 - [ ] **GitHub Pages org-level `.well-known` discovery** - static discovery doc + `.nojekyll` + Content-Type validation across OIDC client libraries + `pages-deploy.yml` automation
 - [ ] **Login form `data-testid` attributes** - stable selectors on all interactive elements for Playwright
 - [ ] **Admin API rate limiting** - optional rate limiting for staging/demo when network-exposed
-- [ ] **`PATCH /admin/v1/config/login`** - runtime login mode / autoLoginUser changes
+- [ ] **`PATCH /admin/v1/config/login`** - runtime login mode / autoLoginUser changes (with validation per Startup Safety Checks)
 - [ ] **`GET /health` endpoint** - readiness/liveness probes for Docker and K8s
 - [ ] **Reusable GitHub Actions workflow** - org-wide consumption for consuming repos
 - [ ] **npm provenance** - publish with `--provenance` flag for supply chain verification
 - [ ] **Graceful shutdown** - handle SIGTERM for clean K8s pod termination (drain connections, close Redis)
 - [ ] **Config hot-reload** - file-watching in dev mode (optional, dev-only convenience)
 - [ ] **Sample SPA in `test/e2e/sample-app/`** - minimal HTML page for E2E tests
-- [ ] **`openid-client` as dev dependency** - for integration test OIDC client helper
+- [ ] **`openid-client` as dev dependency** - for integration test OIDC client helper (use v6+ API, not deprecated v5 `Issuer` class)
+- [ ] **CORS middleware** - enable on `/token`, `/userinfo`, `/.well-known/*`, `/jwks` with configurable origins
+- [ ] **Consent auto-grant** - configure `oidc-provider` to skip consent interaction
+- [ ] **Refresh token rotation** - enable rotation by default in `oidc-provider` config
+- [ ] **Startup safety checks** - production Admin API auth gate, auto-login user validation
+- [ ] **Redis failure behavior** - health check fails, requests return 503, server logs error on Redis disconnect
+
+### Resolved in Spec (no longer open)
+
+- [x] Scope resolution semantics defined (Section 2: Scope Resolution)
+- [x] Scope negotiation rules defined (Section 2: Scope Negotiation)
+- [x] Reset endpoint behavior clarified — full state wipe including tokens/sessions (Section 4)
+- [x] CORS requirements documented (Section 3: CORS)
+- [x] Consent flow documented as auto-granted (Section 3: Consent)
+- [x] Refresh token rotation/revocation policy defined (Section 3: Refresh Tokens)
+- [x] Auto-login user validation behavior defined (Section 2: Startup Safety Checks)
+- [x] Production Admin API auth enforcement defined (Section 2: Startup Safety Checks)
+- [x] Healthcheck Docker vs CI distinction documented (Section 6: Docker Image)
+- [x] `my-spa` client `scopes` field added (Section 2: Config Layering)
+- [x] `ADMIN_API_KEY` added to env var mapping table (Section 2)
+- [x] Multi-tenancy added to non-goals (Overview)
+- [x] Production deployment meaning clarified (Overview: Non-Goals)
 
 ---
 

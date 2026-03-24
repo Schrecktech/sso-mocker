@@ -17,18 +17,16 @@ http://localhost:9090/.well-known/openid-configuration
 
 The discovery document provides all endpoint URLs automatically. Most OIDC client libraries auto-configure from this single URL.
 
-### Example: openid-client
+### Example: openid-client (v6+)
 
 ```typescript
-import { Issuer } from 'openid-client';
+import * as client from 'openid-client';
 
-const issuer = await Issuer.discover('http://localhost:9090');
-const client = new issuer.Client({
-  client_id: 'my-spa',
-  redirect_uris: ['http://localhost:3000/callback'],
-  response_types: ['code'],
-  token_endpoint_auth_method: 'none'  // PKCE public client
-});
+const config = await client.discovery(
+  new URL('http://localhost:9090'),
+  'my-spa'
+);
+// config is now ready for authorization code flow with PKCE
 ```
 
 ### Example: Environment Variable Pattern
@@ -180,6 +178,8 @@ POST   /admin/v1/reset/roles        # Reset only roles
 POST   /admin/v1/reset/teams        # Reset only teams
 POST   /admin/v1/reset/clients      # Reset only clients
 ```
+
+**Full reset (`POST /admin/v1/reset`) clears everything:** users, roles, teams, clients restored to config baseline AND all issued tokens, sessions, and authorization codes are invalidated. This ensures complete test isolation.
 
 ### Runtime Config
 
