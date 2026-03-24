@@ -1,0 +1,17 @@
+server:
+  issuer: "https://sso-mocker.staging.example.com"
+
+storage:
+  adapter: "redis"
+  redis:
+    url: "${REDIS_URL}"
+
+login:
+  mode: "form"
+
+signing:
+  keys: "${SIGNING_KEYS_JSON}"
+
+admin:
+  enabled: true
+  apiKey: "${ADMIN_API_KEY}"

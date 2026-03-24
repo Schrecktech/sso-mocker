@@ -1,0 +1,5 @@
+server:
+  issuer: "http://localhost:9090"
+
+login:
+  mode: "form"

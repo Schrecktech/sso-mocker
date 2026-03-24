@@ -1,0 +1,6 @@
+server:
+  issuer: "http://sso-mocker:9090"
+
+login:
+  mode: "auto"
+  autoLoginUser: "alice"

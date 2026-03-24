@@ -1,0 +1,83 @@
+server:
+  port: 9090
+  issuer: "http://localhost:9090"
+
+storage:
+  adapter: "memory"
+
+login:
+  mode: "form"
+  autoLoginUser: "alice"
+
+signing:
+  keys: []
+
+tokens:
+  idToken:
+    ttl: 3600
+  accessToken:
+    ttl: 3600
+    format: "jwt"
+  refreshToken:
+    ttl: 86400
+    enabled: true
+
+clients:
+  - clientId: "my-spa"
+    clientSecret: null
+    redirectUris:
+      - "http://localhost:3000/callback"
+    grantTypes:
+      - "authorization_code"
+    scopes: []
+    tokenEndpointAuthMethod: "none"
+
+  - clientId: "my-backend"
+    clientSecret: "backend-secret"
+    grantTypes:
+      - "client_credentials"
+    scopes:
+      - "read:users"
+      - "write:orders"
+    tokenEndpointAuthMethod: "client_secret_basic"
+
+teams:
+  - id: "engineering"
+    name: "Engineering"
+    scopes:
+      - "read:repos"
+      - "write:repos"
+      - "read:ci"
+
+  - id: "billing"
+    name: "Billing"
+    scopes:
+      - "read:invoices"
+      - "write:invoices"
+
+roles:
+  - id: "admin"
+    name: "Administrator"
+    scopes:
+      - "*"
+
+  - id: "editor"
+    name: "Editor"
+    scopes:
+      - "read:*"
+      - "write:*"
+
+  - id: "viewer"
+    name: "Viewer"
+    scopes:
+      - "read:*"
+
+cors:
+  allowedOrigins: []
+
+logging:
+  level: "info"
+
+admin:
+  enabled: true
+  apiKey: null
