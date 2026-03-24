@@ -120,6 +120,7 @@ Full API reference in the [Developer's Guide](docs/DEVELOPERS_GUIDE.md).
 | Document | Audience | Description |
 |---|---|---|
 | [Vision](docs/VISION.md) | Everyone | Project goals, principles, and scope |
+| [GitHub Setup Guide](docs/GITHUB_SETUP.md) | DevOps / platform | Step-by-step repo, packages, Pages, and CI setup |
 | [Developer's Guide](docs/DEVELOPERS_GUIDE.md) | App developers | How to integrate SSO Mocker into your app and tests |
 | [Administrator's Guide](docs/ADMINISTRATORS_GUIDE.md) | DevOps / platform | Deployment, configuration, and operations |
 | [Design Spec](docs/superpowers/specs/2026-03-24-sso-mocker-design.md) | Contributors | Full technical design |

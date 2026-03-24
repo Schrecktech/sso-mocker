@@ -2,6 +2,8 @@
 
 Deployment, configuration, and operations for SSO Mocker.
 
+> **First time setting up?** Start with the [GitHub Setup Guide](GITHUB_SETUP.md) for step-by-step instructions on creating the repo, configuring packages, branch protection, GitHub Pages, and your first release.
+
 ## Deployment Targets
 
 | Environment | Package | Storage | Recommended Setup |
