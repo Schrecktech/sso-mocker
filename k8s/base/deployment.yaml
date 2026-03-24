@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sso-mocker
+  labels:
+    app: sso-mocker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sso-mocker
+  template:
+    metadata:
+      labels:
+        app: sso-mocker
+    spec:
+      containers:
+        - name: sso-mocker
+          image: ghcr.io/myorg/sso-mocker:latest
+          ports:
+            - containerPort: 9090
+          env:
+            - name: SSO_MOCKER_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: sso-mocker-config
+                  key: environment
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: sso-mocker-secrets
+                  key: redis-url
+                  optional: true
+            - name: SIGNING_KEYS_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: sso-mocker-secrets
+                  key: signing-keys
+                  optional: true
+            - name: ADMIN_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sso-mocker-secrets
+                  key: admin-api-key
+                  optional: true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
