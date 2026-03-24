@@ -32,7 +32,7 @@ export function createProvider({ config, users, roles, teams }: ProviderOptions)
       profile: ['name', 'role', 'teams', 'scopes', 'team_scopes'],
       email: ['email'],
     },
-    scopes: ['openid', 'profile', 'email', 'offline_access'],
+    scopes: ['openid', 'profile', 'email', 'offline_access', ...registry],
     features: {
       devInteractions: { enabled: false },
       clientCredentials: { enabled: true },
