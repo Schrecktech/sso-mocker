@@ -1,0 +1,48 @@
+{
+  "name": "@myorg/sso-mocker",
+  "version": "0.1.0",
+  "description": "Configurable OIDC identity provider for dev, CI, and non-production environments",
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "sso-mocker": "bin/sso-mocker.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/server.ts",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run test/unit",
+    "test:integration": "vitest run test/integration",
+    "test:e2e": "playwright test",
+    "lint": "eslint src test",
+    "typecheck": "tsc --noEmit"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@koa/cors": "^5.0.0",
+    "@koa/router": "^15.4.0",
+    "ioredis": "^5.10.1",
+    "koa": "^3.1.2",
+    "oidc-provider": "^9.7.1",
+    "yaml": "^2.8.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/koa": "^3.0.2",
+    "@types/koa__cors": "^5.0.1",
+    "@types/koa__router": "^12.0.5",
+    "@types/supertest": "^7.2.0",
+    "supertest": "^7.2.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.1"
+  }
+}
