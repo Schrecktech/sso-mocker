@@ -14,6 +14,54 @@ Built on [oidc-provider](https://github.com/panva/node-oidc-provider) (OpenID Ce
 - **Production safety** — server refuses to start with user fixtures in production mode
 - **Multiple deployment targets** — npm, Docker, GitHub Actions service container, EKS
 
+## Replacing Your IdP in CI/CD
+
+If your app authenticates with Okta, Auth0, Azure AD, AWS Cognito, or any OIDC-compliant provider in production, SSO Mocker lets you run integration tests without connecting to that provider. The pattern:
+
+**Production:** Your app talks to your real IdP.
+**CI/CD:** Your app talks to SSO Mocker instead — same OIDC protocol, deterministic users, no external dependencies.
+
+The only change needed in your app is making the OIDC issuer URL configurable:
+
+```typescript
+// In your app's auth config
+const issuerUrl = process.env.OIDC_ISSUER || 'https://your-org.okta.com';
+```
+
+Then in your GitHub Actions workflow, set `OIDC_ISSUER` to SSO Mocker:
+
+```yaml
+steps:
+  - uses: Schrecktech/sso-mocker@main
+    id: sso
+  - run: npm test
+    env:
+      OIDC_ISSUER: ${{ steps.sso.outputs.issuer }}
+```
+
+Your app's OIDC client library (e.g., `openid-client`, `next-auth`, `passport-openidconnect`, `oidc-client-ts`, `@auth0/nextjs-auth0`) discovers all endpoints automatically from `/.well-known/openid-configuration` — no code changes needed beyond the issuer URL.
+
+### What works out of the box
+
+| Production IdP | What SSO Mocker replaces | Notes |
+|---|---|---|
+| Okta | Authorization server + user directory | Map Okta groups to SSO Mocker teams |
+| Auth0 | Tenant + user management | Map Auth0 roles/permissions to SSO Mocker roles/scopes |
+| Azure AD / Entra ID | App registration + directory | Map AD groups to teams, app roles to roles |
+| AWS Cognito | User pool + app client | Map Cognito groups to teams |
+| Keycloak | Realm + client | Direct mapping — Keycloak's model is similar |
+| Any OIDC provider | OIDC endpoints + user store | If your app uses standard OIDC, it works |
+
+### Integration checklist
+
+1. Make your app's OIDC issuer URL configurable via environment variable
+2. Register your app's redirect URI in SSO Mocker's `config/default.yaml` (or use the Admin API)
+3. Map your production roles/groups to SSO Mocker roles and teams
+4. Add the SSO Mocker GitHub Action or service container to your CI workflow
+5. Set `OIDC_ISSUER` to the mocker's URL in your test environment
+
+For detailed integration patterns, see the [Developer's Guide](docs/DEVELOPERS_GUIDE.md).
+
 ## Quick Start
 
 ### Local Development (npx)
