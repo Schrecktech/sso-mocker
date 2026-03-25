@@ -1,4 +1,5 @@
 import Provider from 'oidc-provider';
+import { generateKeyPair, exportJWK } from 'jose';
 import type { AppConfig, User } from '../config/schema.js';
 import { MemoryAdapter } from '../store/memory.js';
 import { buildUserClaims } from './claims.js';
@@ -11,7 +12,7 @@ interface ProviderOptions {
   teams: AppConfig['teams'];
 }
 
-export function createProvider({ config, users, roles, teams }: ProviderOptions): Provider {
+export async function createProvider({ config, users, roles, teams }: ProviderOptions): Promise<Provider> {
   const registry = buildScopeRegistry(teams, config.clients);
 
   const clients = config.clients.map((c) => ({
@@ -33,6 +34,7 @@ export function createProvider({ config, users, roles, teams }: ProviderOptions)
       email: ['email'],
     },
     scopes: ['openid', 'profile', 'email', 'offline_access', ...registry],
+    conformIdTokenClaims: false,
     features: {
       devInteractions: { enabled: false },
       clientCredentials: { enabled: true },
@@ -45,11 +47,11 @@ export function createProvider({ config, users, roles, teams }: ProviderOptions)
     findAccount: async (_ctx: unknown, id: string) => {
       const user = users.find((u) => u.id === id);
       if (!user) return undefined;
-      const claims = buildUserClaims(user, roles, teams, registry);
+      const userClaims = buildUserClaims(user, roles, teams, registry);
       return {
         accountId: id,
-        async claims() {
-          return claims;
+        async claims(_use: string, _scope: string) {
+          return userClaims;
         },
       };
     },
@@ -63,6 +65,12 @@ export function createProvider({ config, users, roles, teams }: ProviderOptions)
 
   if (config.signing.keys && config.signing.keys.length > 0) {
     providerConfig.jwks = { keys: config.signing.keys };
+  } else {
+    const { privateKey } = await generateKeyPair('RS256', { extractable: true });
+    const jwk = await exportJWK(privateKey);
+    jwk.use = 'sig';
+    jwk.alg = 'RS256';
+    providerConfig.jwks = { keys: [jwk] };
   }
 
   const provider = new Provider(config.server.issuer, providerConfig as any);

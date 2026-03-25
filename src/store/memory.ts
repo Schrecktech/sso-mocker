@@ -40,6 +40,28 @@ export class MemoryAdapter {
     this.store.delete(id);
   }
 
+  async findByUid(uid: string): Promise<Record<string, unknown> | undefined> {
+    for (const [, entry] of this.store) {
+      if (Date.now() > entry.expiresAt) continue;
+      if (entry.payload.uid === uid) return { ...entry.payload };
+    }
+    return undefined;
+  }
+
+  async findByUserCode(userCode: string): Promise<Record<string, unknown> | undefined> {
+    for (const [, entry] of this.store) {
+      if (Date.now() > entry.expiresAt) continue;
+      if (entry.payload.userCode === userCode) return { ...entry.payload };
+    }
+    return undefined;
+  }
+
+  async revokeByGrantId(grantId: string): Promise<void> {
+    for (const [id, entry] of this.store) {
+      if (entry.payload.grantId === grantId) this.store.delete(id);
+    }
+  }
+
   async consume(id: string): Promise<void> {
     const entry = this.store.get(id);
     if (entry) {
