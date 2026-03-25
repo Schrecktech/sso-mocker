@@ -40,7 +40,7 @@ Built on `oidc-provider` (OpenID Certified), SSO Mocker adds:
 - RBAC with team-scoped permissions
 - Admin API for runtime state management
 - Docker + npm packaging
-- GitHub Actions integration (service containers, reusable workflows)
+- GitHub Actions integration (composite action, service containers, reusable workflows)
 - EKS deployment manifests (Kustomize)
 - Playwright-friendly login UI
 

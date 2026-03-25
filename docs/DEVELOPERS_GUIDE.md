@@ -60,7 +60,7 @@ When a user authenticates, the ID token and userinfo endpoint return:
   "name": "Alice Admin",
   "role": "admin",
   "teams": ["engineering"],
-  "scopes": ["*"],
+  "scopes": ["read:ci", "read:invoices", "read:repos", "read:users", "write:invoices", "write:orders", "write:repos"],
   "team_scopes": {
     "engineering": ["read:repos", "write:repos", "read:ci"]
   }
@@ -180,6 +180,23 @@ POST   /admin/v1/reset/clients      # Reset only clients
 ```
 
 **Full reset (`POST /admin/v1/reset`) clears everything:** users, roles, teams, clients restored to config baseline AND all issued tokens, sessions, and authorization codes are invalidated. This ensures complete test isolation.
+
+### Bulk Import
+
+Replace roles, teams, users, and/or clients in one request. Only provided fields are replaced — omitted fields keep their current values.
+
+```http
+POST   /admin/v1/import             # Bulk replace state
+```
+
+```bash
+curl -X POST http://localhost:9090/admin/v1/import \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "roles": [{"id":"custom-admin","name":"Custom Admin","scopes":["*"]}],
+    "users": [{"id":"jane","email":"jane@co.com","name":"Jane","role":"custom-admin","teams":[]}]
+  }'
+```
 
 ### Runtime Config
 
@@ -305,8 +322,8 @@ The `loginAs` helper:
 export async function loginAs(page: Page, userId: string) {
   await page.goto(process.env.BASE_URL!);
   if (page.url().includes('/interaction/')) {
-    await page.click(`[data-testid="user-${userId}"]`);
-    await page.click('[data-testid="sign-in"]');
+    await page.getByTestId(`user-${userId}`).locator('input[type="radio"]').click();
+    await page.getByTestId('sign-in').click();
   }
   await page.waitForURL(`${process.env.BASE_URL}/**`);
 }
@@ -325,6 +342,30 @@ test('admin flow', async ({ page }) => {
   // Authenticated as alice
 });
 ```
+
+### Session Isolation Between Tests
+
+oidc-provider session cookies persist in the browser even after `POST /reset` flushes server state. For tests that switch users, use a fresh browser context:
+
+```typescript
+test('different user flow', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  // ... OIDC flow runs with clean cookies ...
+  await context.close();
+});
+```
+
+### Integration vs Development Fixtures
+
+The integration environment (`--env integration`) loads different users than development:
+
+| Environment | Users |
+|---|---|
+| development | alice (admin), bob (editor), carol (viewer) |
+| integration | alice (admin), test-admin (admin), test-viewer (viewer) |
+
+Tests using the GitHub Action (which defaults to `--env integration`) must use integration fixture users.
 
 ## GitHub Actions Integration
 
@@ -352,7 +393,7 @@ One step to start the mocker — no Docker or npm setup needed:
 
 ```yaml
 steps:
-  - uses: Schrecktech/sso-mocker@v0.1.0
+  - uses: Schrecktech/sso-mocker@v0.4.0
     id: sso
     with:
       login-mode: auto
@@ -370,6 +411,7 @@ steps:
 | `port` | `9090` | HTTP port |
 | `login-mode` | `auto` | `auto` (CI) or `form` (user picker) |
 | `auto-login-user` | `alice` | User ID for auto-login mode |
+| `config` | | Path to custom config directory (overrides defaults) |
 | `node-version` | `22` | Node.js version |
 
 **Outputs:**
