@@ -97,6 +97,11 @@ export function mountInteractions({ provider, router, getUsers, getLoginMode }: 
   router.post('/interaction/:uid', async (ctx) => {
     const body = (ctx.request as any).body as Record<string, string>;
     const userId = body.user;
+    if (!userId || !getUsers().find((u) => u.id === userId)) {
+      ctx.status = 400;
+      ctx.body = 'Invalid or unknown user';
+      return;
+    }
     const details = await provider.interactionDetails(ctx.req, ctx.res);
     await handleLogin(provider, ctx.req, ctx.res, userId, details);
   });
