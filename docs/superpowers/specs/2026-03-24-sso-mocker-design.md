@@ -630,7 +630,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       sso-mocker:
-        image: ghcr.io/myorg/sso-mocker:latest
+        image: ghcr.io/schrecktech/sso-mocker:latest
         env:
           SSO_MOCKER_ENV: integration
         ports:
@@ -654,7 +654,7 @@ jobs:
 steps:
   - name: Start SSO Mocker
     run: |
-      npx @myorg/sso-mocker start --env integration &
+      npx @schrecktech/sso-mocker start --env integration &
       timeout 30 bash -c 'until curl -sf http://localhost:9090/.well-known/openid-configuration; do sleep 1; done'
   - run: npm test
     env:
@@ -669,7 +669,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       sso-mocker:
-        image: ghcr.io/myorg/sso-mocker:latest
+        image: ghcr.io/schrecktech/sso-mocker:latest
         env:
           SSO_MOCKER_ENV: integration
           SSO_MOCKER_LOGIN_MODE: auto
@@ -724,24 +724,24 @@ on:
 
 | Format | Registry | Use Case |
 |---|---|---|
-| npm package (`@myorg/sso-mocker`) | GitHub Packages npm | Local dev, npx, programmatic import |
-| Docker image | GHCR (`ghcr.io/myorg/sso-mocker`) | CI service containers, EKS, staging/demo |
+| npm package (`@schrecktech/sso-mocker`) | GitHub Packages npm | Local dev, npx, programmatic import |
+| Docker image | GHCR (`ghcr.io/schrecktech/sso-mocker`) | CI service containers, EKS, staging/demo |
 
 ### CLI Interface
 
 ```bash
-npx @myorg/sso-mocker start                    # Development defaults
-npx @myorg/sso-mocker start --env integration   # Specify environment
-npx @myorg/sso-mocker start --port 8080         # Override port
-npx @myorg/sso-mocker start --login-mode auto   # Override login mode
-npx @myorg/sso-mocker start --config ./configs/ # Custom config dir
-npx @myorg/sso-mocker config --env staging      # Print resolved config
+npx @schrecktech/sso-mocker start                    # Development defaults
+npx @schrecktech/sso-mocker start --env integration   # Specify environment
+npx @schrecktech/sso-mocker start --port 8080         # Override port
+npx @schrecktech/sso-mocker start --login-mode auto   # Override login mode
+npx @schrecktech/sso-mocker start --config ./configs/ # Custom config dir
+npx @schrecktech/sso-mocker config --env staging      # Print resolved config
 ```
 
 ### Programmatic API
 
 ```typescript
-import { createMocker } from '@myorg/sso-mocker';
+import { createMocker } from '@schrecktech/sso-mocker';
 
 const mocker = await createMocker({
   env: 'integration',
@@ -762,9 +762,9 @@ Multi-stage build on `node:22-alpine`. Runs as non-root user (`mocker:1001`). Bu
 **Healthcheck note:** The Docker image's internal `HEALTHCHECK` uses `wget -qO- http://localhost:9090/health` because alpine ships with `wget`, not `curl`. GitHub Actions service container health commands run on the runner (which has `curl`), so they use `curl -f http://localhost:9090/.well-known/openid-configuration`. Both are valid — the `/health` endpoint is lighter, but the discovery endpoint also confirms OIDC is ready.
 
 ```bash
-docker run ghcr.io/myorg/sso-mocker:latest                              # Default
-docker run -e SSO_MOCKER_ENV=staging ghcr.io/myorg/sso-mocker:latest    # Override env
-docker run -v ./configs:/app/config ghcr.io/myorg/sso-mocker:latest     # Custom config
+docker run ghcr.io/schrecktech/sso-mocker:latest                              # Default
+docker run -e SSO_MOCKER_ENV=staging ghcr.io/schrecktech/sso-mocker:latest    # Override env
+docker run -v ./configs:/app/config ghcr.io/schrecktech/sso-mocker:latest     # Custom config
 ```
 
 ### Deployment Targets
@@ -811,7 +811,7 @@ Key deployment properties:
 ```yaml
 services:
   sso-mocker:
-    image: ghcr.io/myorg/sso-mocker:latest
+    image: ghcr.io/schrecktech/sso-mocker:latest
     ports: ["9090:9090"]
     environment:
       SSO_MOCKER_ENV: development
@@ -825,7 +825,7 @@ services:
 
 For staging/demo/production where the OIDC issuer URL should be the org's GitHub Pages domain:
 
-- Deploy a static `.well-known/openid-configuration` JSON to the org-level GitHub Pages (`myorg.github.io`)
+- Deploy a static `.well-known/openid-configuration` JSON to the org-level GitHub Pages (`schrecktech.github.io`)
 - Include `.nojekyll` file to prevent Jekyll from ignoring dotfile directories
 - The discovery document's `issuer` matches the GitHub Pages URL
 - The discovery document's endpoint URLs (`authorization_endpoint`, `token_endpoint`, etc.) point to the actual OIDC server (EKS)

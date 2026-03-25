@@ -35,7 +35,7 @@ Then edit `package.json`:
 
 ```json
 {
-  "name": "@myorg/sso-mocker",
+  "name": "@schrecktech/sso-mocker",
   "version": "0.1.0",
   "description": "Configurable OIDC identity provider for dev, CI, and non-production environments",
   "type": "module",

@@ -8,7 +8,7 @@ Deployment, configuration, and operations for SSO Mocker.
 
 | Environment | Package | Storage | Recommended Setup |
 |---|---|---|---|
-| Local dev | npm (npx) | In-memory | `npx @myorg/sso-mocker start` |
+| Local dev | npm (npx) | In-memory | `npx @schrecktech/sso-mocker start` |
 | CI / GitHub Actions | Docker or npx | In-memory | Service container or background process |
 | Staging | Docker (GHCR) | Redis | EKS Deployment (2 replicas) |
 | Demo | Docker (GHCR) | Redis or memory | EKS (separate namespace) |
@@ -133,7 +133,7 @@ Missing required env vars cause a startup failure with a clear error message.
 
 ```bash
 # Start server
-npx @myorg/sso-mocker start [options]
+npx @schrecktech/sso-mocker start [options]
 
 Options:
   --env <environment>       Environment name (default: development)
@@ -142,7 +142,7 @@ Options:
   --config <path>           Custom config directory
 
 # Print resolved config
-npx @myorg/sso-mocker config --env <environment>
+npx @schrecktech/sso-mocker config --env <environment>
 ```
 
 ## Docker
@@ -151,20 +151,20 @@ npx @myorg/sso-mocker config --env <environment>
 
 ```bash
 # Default (integration environment)
-docker run -p 9090:9090 ghcr.io/myorg/sso-mocker:latest
+docker run -p 9090:9090 ghcr.io/schrecktech/sso-mocker:latest
 
 # Override environment
-docker run -p 9090:9090 -e SSO_MOCKER_ENV=staging ghcr.io/myorg/sso-mocker:latest
+docker run -p 9090:9090 -e SSO_MOCKER_ENV=staging ghcr.io/schrecktech/sso-mocker:latest
 
 # Mount custom config
-docker run -p 9090:9090 -v ./my-config:/app/config ghcr.io/myorg/sso-mocker:latest
+docker run -p 9090:9090 -v ./my-config:/app/config ghcr.io/schrecktech/sso-mocker:latest
 
 # With Redis
 docker run -p 9090:9090 \
   -e SSO_MOCKER_ENV=staging \
   -e REDIS_URL=redis://redis-host:6379 \
   -e SIGNING_KEYS_JSON='[{"kty":"RSA",...}]' \
-  ghcr.io/myorg/sso-mocker:latest
+  ghcr.io/schrecktech/sso-mocker:latest
 ```
 
 ### Image Details
@@ -183,7 +183,7 @@ docker run -p 9090:9090 \
 ```yaml
 services:
   sso-mocker:
-    image: ghcr.io/myorg/sso-mocker:latest
+    image: ghcr.io/schrecktech/sso-mocker:latest
     ports: ["9090:9090"]
     environment:
       SSO_MOCKER_ENV: development
@@ -198,7 +198,7 @@ services:
 ```yaml
 services:
   sso-mocker:
-    image: ghcr.io/myorg/sso-mocker:latest
+    image: ghcr.io/schrecktech/sso-mocker:latest
     deploy:
       replicas: 2
     ports: ["9090:9090"]
@@ -312,10 +312,10 @@ Store the output in your secrets manager and inject via `SIGNING_KEYS_JSON`.
 
 For environments where the OIDC issuer URL should be the org's GitHub Pages domain:
 
-1. The org-level GitHub Pages (`myorg.github.io`) serves a static `.well-known/openid-configuration` JSON
+1. The org-level GitHub Pages (`schrecktech.github.io`) serves a static `.well-known/openid-configuration` JSON
 2. This discovery document lists the actual OIDC server endpoints (on EKS)
 3. The OIDC server's `issuer` config matches the GitHub Pages URL
-4. Tokens contain `iss: "https://myorg.github.io"` matching the discovery URL
+4. Tokens contain `iss: "https://schrecktech.github.io"` matching the discovery URL
 5. A `.nojekyll` file in the Pages repo prevents Jekyll from ignoring dotfile directories
 
 The `pages-deploy.yml` workflow automates generating and deploying this discovery document.
@@ -389,7 +389,7 @@ The mocker is a mock service, not a production IdP. Minimal monitoring is recomm
 |---|---|---|
 | "User fixtures are not allowed in production" | Fixtures found in production config | Remove users from production config; use Admin API |
 | "Missing required environment variable: X" | `${X}` in YAML but X not set | Set the environment variable |
-| "Config validation failed" | Invalid YAML or schema mismatch | Run `npx @myorg/sso-mocker config --env <env>` to debug |
+| "Config validation failed" | Invalid YAML or schema mismatch | Run `npx @schrecktech/sso-mocker config --env <env>` to debug |
 | "EADDRINUSE" | Port already in use | Change port via `--port` or `SSO_MOCKER_PORT` |
 
 ### OIDC client rejects tokens

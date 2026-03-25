@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: sso-mocker
-          image: ghcr.io/myorg/sso-mocker:latest
+          image: ghcr.io/schrecktech/sso-mocker:latest
           ports:
             - containerPort: 9090
           env:

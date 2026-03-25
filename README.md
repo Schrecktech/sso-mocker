@@ -19,7 +19,7 @@ Built on [oidc-provider](https://github.com/panva/node-oidc-provider) (OpenID Ce
 ### Local Development (npx)
 
 ```bash
-npx @myorg/sso-mocker start
+npx @schrecktech/sso-mocker start
 ```
 
 Starts the mocker on `http://localhost:9090` with the development config and login form.
@@ -32,7 +32,7 @@ http://localhost:9090/.well-known/openid-configuration
 ### Docker
 
 ```bash
-docker run -p 9090:9090 ghcr.io/myorg/sso-mocker:latest
+docker run -p 9090:9090 ghcr.io/schrecktech/sso-mocker:latest
 ```
 
 ### GitHub Actions (Service Container)
@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       sso-mocker:
-        image: ghcr.io/myorg/sso-mocker:latest
+        image: ghcr.io/schrecktech/sso-mocker:latest
         env:
           SSO_MOCKER_ENV: integration
           SSO_MOCKER_LOGIN_MODE: auto
@@ -65,7 +65,7 @@ jobs:
 ### Programmatic (Test Suites)
 
 ```typescript
-import { createMocker } from '@myorg/sso-mocker';
+import { createMocker } from '@schrecktech/sso-mocker';
 
 const mocker = await createMocker({
   env: 'integration',

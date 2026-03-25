@@ -245,7 +245,7 @@ test('viewer cannot delete', async () => {
 ### Pattern: Programmatic Mocker in Test Suite
 
 ```typescript
-import { createMocker, Mocker } from '@myorg/sso-mocker';
+import { createMocker, Mocker } from '@schrecktech/sso-mocker';
 
 let mocker: Mocker;
 
@@ -333,7 +333,7 @@ test('admin flow', async ({ page }) => {
 ```yaml
 services:
   sso-mocker:
-    image: ghcr.io/myorg/sso-mocker:latest
+    image: ghcr.io/schrecktech/sso-mocker:latest
     env:
       SSO_MOCKER_ENV: integration
       SSO_MOCKER_LOGIN_MODE: auto
@@ -351,7 +351,7 @@ services:
 ```yaml
 - name: Start SSO Mocker
   run: |
-    npx @myorg/sso-mocker start --env integration &
+    npx @schrecktech/sso-mocker start --env integration &
     timeout 30 bash -c 'until curl -sf http://localhost:9090/.well-known/openid-configuration; do sleep 1; done'
 ```
 
