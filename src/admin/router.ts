@@ -5,7 +5,7 @@ import { MemoryAdapter } from '../store/memory.js';
 import { createUserHandlers, type AdminState } from './handlers/users.js';
 import { createRoleHandlers } from './handlers/roles.js';
 import { createTeamHandlers } from './handlers/teams.js';
-import { PatchLoginConfigBody } from './validation.js';
+import { PatchLoginConfigBody, ImportBody } from './validation.js';
 import { ZodError } from 'zod';
 
 function deepCloneUsers(users: User[]): User[] {
@@ -114,6 +114,52 @@ export function createAdminRouter({ config, users }: AdminRouterOptions): Router
   router.post('/teams', (ctx) => teamHandlers.create(ctx));
   router.patch('/teams/:id', (ctx) => teamHandlers.update(ctx));
   router.delete('/teams/:id', (ctx) => teamHandlers.delete(ctx));
+
+  // Import — replace state with provided data
+  router.post('/import', (ctx) => {
+    const parsed = ImportBody.safeParse((ctx.request as any).body);
+    if (!parsed.success) {
+      ctx.status = 400;
+      ctx.body = { error: formatZodError(parsed.error) };
+      return;
+    }
+    const input = parsed.data;
+
+    if (input.roles) {
+      state.config.roles.length = 0;
+      for (const r of input.roles) state.config.roles.push({ ...r, scopes: [...r.scopes] });
+    }
+    if (input.teams) {
+      state.config.teams.length = 0;
+      for (const t of input.teams) state.config.teams.push({ ...t, scopes: [...t.scopes] });
+    }
+    if (input.users) {
+      state.users.length = 0;
+      for (const u of input.users) state.users.push({ ...u, teams: [...u.teams] });
+    }
+    if (input.clients) {
+      state.config.clients.length = 0;
+      for (const c of input.clients) state.config.clients.push({
+        clientId: c.clientId,
+        clientSecret: c.clientSecret,
+        redirectUris: [...c.redirectUris],
+        grantTypes: [...c.grantTypes],
+        scopes: [...c.scopes],
+        tokenEndpointAuthMethod: c.tokenEndpointAuthMethod,
+      });
+    }
+
+    // Flush OIDC state since identity model changed
+    MemoryAdapter.flushAll();
+
+    ctx.body = {
+      status: 'imported',
+      roles: state.config.roles.length,
+      teams: state.config.teams.length,
+      users: state.users.length,
+      clients: state.config.clients.length,
+    };
+  });
 
   // Reset all state
   router.post('/reset', (ctx) => {

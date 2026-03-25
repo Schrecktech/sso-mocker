@@ -3,7 +3,6 @@ import { loadConfig } from '../../src/config/loader.js';
 import path from 'node:path';
 
 const CONFIG_DIR = path.resolve('config');
-const FIXTURES_DIR = path.resolve('fixtures');
 
 describe('loadConfig', () => {
   afterEach(() => {
@@ -14,7 +13,7 @@ describe('loadConfig', () => {
     const result = await loadConfig({
       env: 'development',
       configDir: CONFIG_DIR,
-      fixturesDir: FIXTURES_DIR,
+
     });
     expect(result.config.server.port).toBe(9090);
     expect(result.config.clients).toHaveLength(2);
@@ -26,7 +25,7 @@ describe('loadConfig', () => {
     const result = await loadConfig({
       env: 'development',
       configDir: CONFIG_DIR,
-      fixturesDir: FIXTURES_DIR,
+
     });
     expect(result.users).toHaveLength(3);
     expect(result.users[0].id).toBe('alice');
@@ -36,7 +35,7 @@ describe('loadConfig', () => {
     const result = await loadConfig({
       env: 'integration',
       configDir: CONFIG_DIR,
-      fixturesDir: FIXTURES_DIR,
+
     });
     expect(result.config.login.mode).toBe('auto');
     expect(result.config.server.issuer).toBe('http://sso-mocker:9090');
@@ -46,7 +45,7 @@ describe('loadConfig', () => {
     const result = await loadConfig({
       env: 'integration',
       configDir: CONFIG_DIR,
-      fixturesDir: FIXTURES_DIR,
+
     });
     expect(result.users.find((u) => u.id === 'test-admin')).toBeDefined();
   });
@@ -59,7 +58,7 @@ describe('loadConfig', () => {
       loadConfig({
         env: 'production',
         configDir: CONFIG_DIR,
-        fixturesDir: FIXTURES_DIR,
+  
         forceFixturesExist: true,
       }),
     ).rejects.toThrow('User fixtures are not allowed in production');
@@ -73,7 +72,7 @@ describe('loadConfig', () => {
       loadConfig({
         env: 'production',
         configDir: CONFIG_DIR,
-        fixturesDir: FIXTURES_DIR,
+  
       }),
     ).rejects.toThrow('Admin API must be secured');
   });
@@ -82,7 +81,7 @@ describe('loadConfig', () => {
     const result = await loadConfig({
       env: 'development',
       configDir: CONFIG_DIR,
-      fixturesDir: FIXTURES_DIR,
+
       overrides: { port: 8080, loginMode: 'auto' },
     });
     expect(result.config.server.port).toBe(8080);

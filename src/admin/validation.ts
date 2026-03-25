@@ -47,5 +47,20 @@ export type PatchUserInput = z.infer<typeof PatchUserBody>;
 export type PatchLoginConfigInput = z.infer<typeof PatchLoginConfigBody>;
 export type CreateRoleInput = z.infer<typeof CreateRoleBody>;
 export type PatchRoleInput = z.infer<typeof PatchRoleBody>;
+export const ImportBody = z.object({
+  roles: z.array(CreateRoleBody).optional(),
+  teams: z.array(CreateTeamBody).optional(),
+  users: z.array(CreateUserBody).optional(),
+  clients: z.array(z.object({
+    clientId: z.string().min(1),
+    clientSecret: z.string().nullable().default(null),
+    redirectUris: z.array(z.string()).default([]),
+    grantTypes: z.array(z.string()),
+    scopes: z.array(z.string()).default([]),
+    tokenEndpointAuthMethod: z.enum(['none', 'client_secret_basic', 'client_secret_post']).default('client_secret_basic'),
+  })).optional(),
+});
+
 export type CreateTeamInput = z.infer<typeof CreateTeamBody>;
 export type PatchTeamInput = z.infer<typeof PatchTeamBody>;
+export type ImportInput = z.infer<typeof ImportBody>;

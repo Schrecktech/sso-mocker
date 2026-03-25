@@ -29,12 +29,10 @@ export interface CreateMockerOptions {
 export async function createMocker(options: CreateMockerOptions = {}): Promise<MockerInstance> {
   const env = options.env ?? process.env.SSO_MOCKER_ENV ?? 'development';
   const configDir = options.configDir ?? path.resolve('config');
-  const fixturesDir = options.fixturesDir ?? path.resolve('fixtures');
 
   const loaded = await loadConfig({
     env,
     configDir,
-    fixturesDir,
     overrides: {
       port: options.port,
       loginMode: options.loginMode,

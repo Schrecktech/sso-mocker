@@ -8,7 +8,6 @@ export async function startTestMocker(overrides: Record<string, unknown> = {}): 
     loginMode: 'auto',
     autoLoginUser: 'alice',
     configDir: path.resolve('config'),
-    fixturesDir: path.resolve('fixtures'),
     ...overrides,
   } as any);
   await mocker.start();
