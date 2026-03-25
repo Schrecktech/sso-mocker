@@ -114,7 +114,7 @@ jobs:
 
 ```yaml
 steps:
-  - uses: Schrecktech/sso-mocker@v0.1.0
+  - uses: Schrecktech/sso-mocker@v0.4.0
     id: sso
     with:
       login-mode: auto
@@ -130,6 +130,7 @@ steps:
 | `port` | `9090` | HTTP port |
 | `login-mode` | `auto` | `auto` (CI) or `form` (user picker) |
 | `auto-login-user` | `alice` | User ID for auto-login mode |
+| `config` | | Path to custom config directory (overrides defaults) |
 | `node-version` | `22` | Node.js version |
 
 **Output:** `issuer` — the OIDC issuer URL (e.g., `http://localhost:9090`)
@@ -159,12 +160,11 @@ Configuration uses YAML files with environment-specific layering:
 config/
   default.yaml              # Shared structure (teams, roles, scopes, clients)
   development.yaml          # Local dev overrides
+  development.users.yaml    # Dev user personas
   integration.yaml          # CI overrides
+  integration.users.yaml    # CI user personas
   staging.yaml              # Staging overrides
   production.yaml           # Production overrides (no user fixtures allowed)
-fixtures/
-  development.users.yaml    # Dev user personas
-  integration.users.yaml    # CI user personas
 ```
 
 Select environment via `SSO_MOCKER_ENV` (defaults to `development`).
@@ -183,6 +183,11 @@ curl -X POST http://localhost:9090/admin/v1/users \
 
 # Reset all state to config baseline
 curl -X POST http://localhost:9090/admin/v1/reset
+
+# Bulk replace roles, teams, users, and/or clients
+curl -X POST http://localhost:9090/admin/v1/import \
+  -H 'Content-Type: application/json' \
+  -d '{"roles":[...],"teams":[...],"users":[...],"clients":[...]}'
 ```
 
 Full API reference in the [Developer's Guide](docs/DEVELOPERS_GUIDE.md).

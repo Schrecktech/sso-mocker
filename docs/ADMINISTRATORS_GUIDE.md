@@ -22,14 +22,15 @@ Deployment, configuration, and operations for SSO Mocker.
 config/
   default.yaml              # Base structure (loaded always)
   development.yaml          # Merged when SSO_MOCKER_ENV=development
-  integration.yaml          # Merged when SSO_MOCKER_ENV=integration
-  staging.yaml              # Merged when SSO_MOCKER_ENV=staging
-  production.yaml           # Merged when SSO_MOCKER_ENV=production
-fixtures/
   development.users.yaml    # User personas for development
+  integration.yaml          # Merged when SSO_MOCKER_ENV=integration
   integration.users.yaml    # User personas for CI
+  staging.yaml              # Merged when SSO_MOCKER_ENV=staging
   staging.users.yaml        # Optional sparse personas for staging
+  production.yaml           # Merged when SSO_MOCKER_ENV=production
 ```
+
+All config and fixture files live in a single `config/` directory.
 
 Environment is selected via `SSO_MOCKER_ENV` (defaults to `development`).
 
@@ -37,7 +38,7 @@ Environment is selected via `SSO_MOCKER_ENV` (defaults to `development`).
 
 1. `config/default.yaml` — base structure
 2. `config/{SSO_MOCKER_ENV}.yaml` — environment overrides
-3. `fixtures/{SSO_MOCKER_ENV}.users.yaml` — user fixtures (if allowed)
+3. `config/{SSO_MOCKER_ENV}.users.yaml` — user fixtures (if allowed)
 4. Environment variables (`SSO_MOCKER_*`) — runtime overrides
 5. CLI flags (`--port`, `--login-mode`, etc.) — highest priority
 
@@ -190,7 +191,6 @@ services:
       SSO_MOCKER_LOGIN_MODE: form
     volumes:
       - ./config:/app/config
-      - ./fixtures:/app/fixtures
 ```
 
 **With Redis (simulating staging):**
@@ -283,7 +283,7 @@ When running multiple replicas:
 
 Production mode has special restrictions enforced at startup:
 
-1. **No user fixtures** — the server refuses to start if `fixtures/production.users.yaml` exists or if any config file defines users
+1. **No user fixtures** — the server refuses to start if `config/production.users.yaml` exists or if any config file defines users
 2. **Admin API only** — all user/role/team management happens through the Admin API
 3. **API key required** — the server refuses to start if `admin.enabled=true` and `admin.apiKey` is null/empty. Error: `Admin API must be secured with an API key in production mode.`
 4. **Stable signing keys** — must be provided explicitly via `SIGNING_KEYS_JSON` (auto-generation is not suitable for production)
@@ -380,6 +380,71 @@ The mocker is a mock service, not a production IdP. Minimal monitoring is recomm
 - **Health endpoint** — use existing infrastructure monitoring to check `/health`
 - **Container logs** — the server logs startup config, request errors, and shutdown events to stdout
 - **Redis connectivity** — monitor the Redis connection if using the Redis adapter
+
+## Release Process
+
+### 1. Version Bump
+
+Create a release branch and bump the version in `package.json`:
+
+```bash
+git checkout main && git pull
+git checkout -b release/vX.Y.Z
+# Edit package.json version
+npm install --package-lock-only
+git add package.json package-lock.json
+git commit -m "chore: bump version to X.Y.Z"
+git push -u origin release/vX.Y.Z
+```
+
+Create a PR, wait for CI to pass, and merge through the merge queue.
+
+### 2. Tag and Push
+
+After the version bump PR merges:
+
+```bash
+git checkout main && git pull
+git tag -s vX.Y.Z -m "vX.Y.Z: <brief description>"
+git push origin vX.Y.Z
+```
+
+The signed tag triggers the `release.yml` workflow which:
+- Publishes `@schrecktech/sso-mocker@X.Y.Z` to GitHub Packages (npm) with provenance
+- Builds and pushes `ghcr.io/schrecktech/sso-mocker:vX.Y.Z` and `:latest` to GHCR
+
+### 3. Create GitHub Release
+
+After the release workflow completes, create a GitHub Release with auto-generated notes:
+
+```bash
+gh release create vX.Y.Z \
+  --title "vX.Y.Z" \
+  --generate-notes \
+  --latest
+```
+
+This generates a changelog from PR titles since the last release, marks it as the latest release, and publishes it.
+
+### 4. Verify
+
+```bash
+# Check npm package
+npm view @schrecktech/sso-mocker version
+
+# Check Docker image
+docker pull ghcr.io/schrecktech/sso-mocker:vX.Y.Z
+
+# Check GitHub release
+gh release view vX.Y.Z --repo Schrecktech/sso-mocker
+```
+
+### Version Numbering
+
+Follow [semver](https://semver.org/):
+- **Patch** (`0.4.1`) — bug fixes, doc updates
+- **Minor** (`0.5.0`) — new features, new endpoints, new config options
+- **Major** (`1.0.0`) — breaking changes to config format, API, or CLI
 
 ## Troubleshooting
 
