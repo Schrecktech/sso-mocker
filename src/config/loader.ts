@@ -8,7 +8,7 @@ import { interpolateEnvVars } from './interpolate.js';
 export interface LoadConfigOptions {
   env: string;
   configDir: string;
-  fixturesDir: string;
+  fixturesDir?: string;
   overrides?: { port?: number; loginMode?: 'auto' | 'form' };
   forceFixturesExist?: boolean;
 }
@@ -73,7 +73,8 @@ function safeInterpolate(obj: unknown): unknown {
 }
 
 export async function loadConfig(options: LoadConfigOptions): Promise<LoadedConfig> {
-  const { env, configDir, fixturesDir, overrides } = options;
+  const { env, configDir, overrides } = options;
+  const fixturesDir = options.fixturesDir ?? configDir;
 
   // 1. Load default.yaml
   const defaultConfig = await readYamlFile(path.join(configDir, 'default.yaml'));

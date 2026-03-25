@@ -1,0 +1,20 @@
+users:
+  - id: "alice"
+    email: "alice@example.com"
+    name: "Alice Admin"
+    role: "admin"
+    teams:
+      - "engineering"
+
+  - id: "test-admin"
+    email: "test-admin@ci.local"
+    name: "CI Admin"
+    role: "admin"
+    teams:
+      - "engineering"
+
+  - id: "test-viewer"
+    email: "test-viewer@ci.local"
+    name: "CI Viewer"
+    role: "viewer"
+    teams: []

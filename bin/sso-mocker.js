@@ -15,8 +15,9 @@ if (command === 'start') {
   const env = getFlag('--env') ?? process.env.SSO_MOCKER_ENV ?? 'development';
   const port = getFlag('--port') ? parseInt(getFlag('--port'), 10) : undefined;
   const loginMode = getFlag('--login-mode');
+  const configDir = getFlag('--config');
 
-  const mocker = await createMocker({ env, port, loginMode });
+  const mocker = await createMocker({ env, port, loginMode, configDir });
   await mocker.start();
   console.log(`[sso-mocker] Running in ${env} mode`);
   console.log(`[sso-mocker] Issuer: ${mocker.issuer}`);
@@ -35,7 +36,8 @@ if (command === 'start') {
   });
 } else if (command === 'config') {
   const env = getFlag('--env') ?? 'development';
-  const mocker = await createMocker({ env, port: 0 });
+  const configDir = getFlag('--config');
+  const mocker = await createMocker({ env, port: 0, configDir });
   console.log(JSON.stringify(mocker.config, null, 2));
   await mocker.stop();
 } else {
@@ -49,4 +51,5 @@ if (command === 'start') {
   console.log('  --env <name>          Environment (default: development)');
   console.log('  --port <number>       HTTP port (default: 9090)');
   console.log('  --login-mode <mode>   "auto" or "form"');
+  console.log('  --config <path>       Config directory (default: ./config)');
 }

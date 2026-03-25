@@ -1,0 +1,22 @@
+users:
+  - id: "alice"
+    email: "alice@example.com"
+    name: "Alice Admin"
+    role: "admin"
+    teams:
+      - "engineering"
+
+  - id: "bob"
+    email: "bob@example.com"
+    name: "Bob Editor"
+    role: "editor"
+    teams:
+      - "engineering"
+      - "billing"
+
+  - id: "carol"
+    email: "carol@example.com"
+    name: "Carol Viewer"
+    role: "viewer"
+    teams:
+      - "billing"

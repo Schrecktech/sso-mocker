@@ -17,6 +17,9 @@ inputs:
   auto-login-user:
     description: 'User ID for auto-login mode'
     default: 'alice'
+  config:
+    description: 'Path to custom config directory (contains default.yaml, {env}.yaml, {env}.users.yaml)'
+    default: ''
   node-version:
     description: 'Node.js version'
     default: '22'
@@ -45,13 +48,19 @@ runs:
       shell: bash
       run: |
         cd "$GITHUB_ACTION_PATH"
+        CONFIG_FLAG=""
+        if [ -n "$SSO_CONFIG_DIR" ]; then
+          CONFIG_FLAG="--config $GITHUB_WORKSPACE/$SSO_CONFIG_DIR"
+        fi
         node bin/sso-mocker.js start \
           --env ${{ inputs.environment }} \
           --port ${{ inputs.port }} \
-          --login-mode ${{ inputs.login-mode }} &
+          --login-mode ${{ inputs.login-mode }} \
+          $CONFIG_FLAG &
         echo "Waiting for SSO Mocker to be ready..."
         timeout 30 bash -c 'until curl -sf http://localhost:${{ inputs.port }}/health > /dev/null 2>&1; do sleep 1; done'
         echo "SSO Mocker ready at http://localhost:${{ inputs.port }}"
         echo "issuer=http://localhost:${{ inputs.port }}" >> $GITHUB_OUTPUT
       env:
         SSO_MOCKER_AUTO_LOGIN_USER: ${{ inputs.auto-login-user }}
+        SSO_CONFIG_DIR: ${{ inputs.config }}
