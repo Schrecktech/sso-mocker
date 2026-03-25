@@ -346,6 +346,38 @@ services:
       --health-retries 5
 ```
 
+### GitHub Action (Simplest)
+
+One step to start the mocker — no Docker or npm setup needed:
+
+```yaml
+steps:
+  - uses: Schrecktech/sso-mocker@v0.1.0
+    id: sso
+    with:
+      login-mode: auto
+      auto-login-user: alice
+  - run: npm test
+    env:
+      OIDC_ISSUER: ${{ steps.sso.outputs.issuer }}
+```
+
+**Inputs:**
+
+| Input | Default | Description |
+|---|---|---|
+| `environment` | `integration` | Config environment |
+| `port` | `9090` | HTTP port |
+| `login-mode` | `auto` | `auto` (CI) or `form` (user picker) |
+| `auto-login-user` | `alice` | User ID for auto-login mode |
+| `node-version` | `22` | Node.js version |
+
+**Outputs:**
+
+| Output | Description |
+|---|---|
+| `issuer` | OIDC issuer URL (e.g., `http://localhost:9090`) |
+
 ### Background Process (No Docker)
 
 ```yaml
