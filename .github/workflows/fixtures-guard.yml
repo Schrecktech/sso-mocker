@@ -4,6 +4,7 @@ on:
     paths:
       - 'config/**'
       - 'fixtures/**'
+  merge_group:
 
 jobs:
   check:
