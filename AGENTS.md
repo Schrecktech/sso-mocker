@@ -1,6 +1,5 @@
-# AGENTS.md
+# SSO Mocker
 
-## Project
 Configurable OIDC identity provider built on `oidc-provider` v9 (MIT, panva). Node.js 22, TypeScript ESM, Koa, Zod v4, Vitest.
 
 ## Commands
@@ -34,11 +33,34 @@ Configurable OIDC identity provider built on `oidc-provider` v9 (MIT, panva). No
 - Integration fixtures (alice, test-admin, test-viewer) differ from dev fixtures (alice, bob, carol)
 - Action must `cd "$GITHUB_ACTION_PATH"` before starting — config resolves from cwd
 
+## Code Style
+- TypeScript ESM — all imports use `.js` extension (e.g., `import { foo } from './bar.js'`)
+- Strict mode enabled in tsconfig
+- No default exports — use named exports
+- Zod for all runtime validation (config schemas, API request bodies)
+- Files organized by domain: `config/`, `oidc/`, `admin/`, `store/`, `ui/`
+
+## Security
+- Production refuses to start with user fixtures — hard gate in config loader
+- Production requires `admin.apiKey` when Admin API is enabled
+- No real passwords — login form is a picker or optional cosmetic password field
+- Signing keys auto-generated for dev; must be explicit for staging/production
+- GitHub Actions pinned to commit SHA to prevent supply chain attacks
+- Never commit secrets to config files — use `${ENV_VAR}` interpolation
+
 ## Testing
 - Unit tests: `test/unit/` — pure logic, no HTTP
 - Integration tests: `test/integration/` — uses `test/helpers/mocker.ts` to start on random port
 - E2E tests: separate repo `Schrecktech/sso-mocker-tester` with Playwright (3s timeout)
 - Playwright: use `browser.newContext()` between OIDC tests — session cookies persist after `MemoryAdapter.flushAll()`
+- Verify before claiming done: `npm run typecheck && npm test`
+
+## Key Dependencies
+- `oidc-provider` — certified OIDC server (do not replace or supplement with other OIDC libs)
+- `jose` — JWT/JWK operations (comes with oidc-provider, do not add `jsonwebtoken`)
+- `koa` — HTTP framework (oidc-provider extends it, do not add express)
+- `zod` — runtime validation (do not add joi, yup, or similar)
+- `yaml` — YAML parsing for config files
 
 ## Release Process
 1. Feature branch -> PR -> merge queue -> main
