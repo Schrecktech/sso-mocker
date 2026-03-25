@@ -8,7 +8,7 @@
     "sso-mocker": "bin/sso-mocker.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/ui/templates dist/ui/",
     "dev": "tsx src/server.ts",
     "start": "node dist/server.js",
     "test": "vitest run",
