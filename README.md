@@ -212,4 +212,4 @@ Full API reference in the [Developer's Guide](docs/DEVELOPERS_GUIDE.md).
 
 ## License
 
-TBD (recommended: MIT)
+[MIT-0](LICENSE) (MIT No Attribution)
