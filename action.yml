@@ -44,7 +44,8 @@ runs:
       id: start
       shell: bash
       run: |
-        node "$GITHUB_ACTION_PATH/bin/sso-mocker.js" start \
+        cd "$GITHUB_ACTION_PATH"
+        node bin/sso-mocker.js start \
           --env ${{ inputs.environment }} \
           --port ${{ inputs.port }} \
           --login-mode ${{ inputs.login-mode }} &
