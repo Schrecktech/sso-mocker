@@ -410,7 +410,8 @@ git push origin vX.Y.Z
 ```
 
 The signed tag triggers the `release.yml` workflow which:
-- Publishes `@schrecktech/sso-mocker@X.Y.Z` to GitHub Packages (npm) with provenance
+- Publishes `@schrecktech/sso-mocker@X.Y.Z` to **npmjs.com** with provenance
+- Publishes `@schrecktech/sso-mocker@X.Y.Z` to **GitHub Packages** (npm) with provenance
 - Builds and pushes `ghcr.io/schrecktech/sso-mocker:vX.Y.Z` and `:latest` to GHCR
 
 ### 3. Create GitHub Release
@@ -429,8 +430,11 @@ This generates a changelog from PR titles since the last release, marks it as th
 ### 4. Verify
 
 ```bash
-# Check npm package
+# Check npmjs.com package
 npm view @schrecktech/sso-mocker version
+
+# Check GitHub Packages
+npm view @schrecktech/sso-mocker version --registry=https://npm.pkg.github.com
 
 # Check Docker image
 docker pull ghcr.io/schrecktech/sso-mocker:vX.Y.Z

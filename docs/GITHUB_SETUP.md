@@ -35,9 +35,9 @@ git remote add origin https://github.com/schrecktech/sso-mocker.git
 git push -u origin main
 ```
 
-## Step 3: Configure GitHub Packages (npm)
+## Step 3: Configure npm Registries
 
-SSO Mocker publishes to GitHub's npm registry, not the public npm registry.
+SSO Mocker publishes to **both** the public npm registry (npmjs.com) and GitHub Packages. Consumers can install from either source.
 
 ### 3a. Set the package scope in `package.json`
 
@@ -47,14 +47,46 @@ Ensure `package.json` has:
 {
   "name": "@schrecktech/sso-mocker",
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "provenance": true
   }
 }
 ```
 
-### 3b. Configure consuming repos to install from GitHub Packages
+> **Note:** No `registry` is set in `publishConfig`. Each CI job configures its own target registry via `setup-node`, so publishing works for both npmjs.com and GitHub Packages.
 
-Each repo that uses `@schrecktech/sso-mocker` needs a `.npmrc` file:
+### 3b. Set up the npmjs.com organization (bootstrap token)
+
+The package must exist on npmjs.com before trusted publishing can be configured. This step creates a **temporary** access token for the first publish only.
+
+1. Go to [npmjs.com/signup](https://www.npmjs.com/signup) and sign in (or create an account)
+2. Go to [npmjs.com/org/create](https://www.npmjs.com/org/create) and create the `@schrecktech` org (if it doesn't exist)
+3. Go to **Access Tokens** → **Generate New Token** → **Granular Access Token**:
+   - **Token name:** `github-actions-bootstrap` (temporary — will be removed after trusted publishing is configured)
+   - **Expiration:** 30 days (short-lived, only needed for first publish)
+   - **Packages and scopes:** "Read and write" → select `@schrecktech` org
+   - **Organizations:** No access (not needed)
+   - **Bypass two-factor authentication:** Yes (CI cannot perform interactive 2FA)
+4. Copy the token and add it as a repository secret:
+
+```bash
+gh secret set NPM_TOKEN --repo schrecktech/sso-mocker
+# Paste the token when prompted
+```
+
+> **After the first publish**, switch to trusted publishing ([Step 3e](#3e-switch-to-trusted-publishing-after-first-publish)) and delete this token.
+
+### 3c. Configure consuming repos
+
+**From npmjs.com (recommended — no extra config needed):**
+
+```bash
+npm install --save-dev @schrecktech/sso-mocker
+```
+
+**From GitHub Packages (alternative — requires `.npmrc`):**
+
+Each repo that installs from GitHub Packages needs a `.npmrc` file:
 
 ```
 @schrecktech:registry=https://npm.pkg.github.com
@@ -69,13 +101,61 @@ npm login --scope=@schrecktech --registry=https://npm.pkg.github.com
 # Use your GitHub username and a Personal Access Token (PAT) with read:packages scope
 ```
 
-### 3c. Set package visibility
+### 3d. Set GitHub Packages visibility
 
 After the first publish, configure package visibility:
 
 1. Go to `https://github.com/orgs/schrecktech/packages/npm/sso-mocker/settings`
 2. Under "Manage access", add teams/users that need to pull the package
 3. For org-wide access: "Inherit access from source repository" is usually sufficient
+
+### 3e. Switch to trusted publishing (after first publish)
+
+Once the package exists on npmjs.com, configure trusted publishing to eliminate the `NPM_TOKEN` secret entirely. npm's trusted publishing uses GitHub Actions OIDC tokens — no stored secrets needed.
+
+**1. Link the GitHub repo on npmjs.com:**
+
+1. Go to `https://www.npmjs.com/package/@schrecktech/sso-mocker/access`
+2. Under **Publishing access** → **Trusted Publishers**, click **Add trusted publisher**
+3. Configure:
+   - **Repository owner:** `Schrecktech`
+   - **Repository name:** `sso-mocker`
+   - **Workflow filename:** `release.yml`
+   - **Environment:** *(leave blank — not using GitHub environments for this job)*
+4. Click **Add**
+
+**2. Update the release workflow:**
+
+Remove the `NPM_TOKEN` line from `publish-npmjs` — the `id-token: write` permission (already set) handles authentication:
+
+```yaml
+  publish-npmjs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write    # OIDC token for trusted publishing
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm ci
+      - run: npm run build
+      - run: npm publish --provenance --access public
+```
+
+> **Key change:** No `NODE_AUTH_TOKEN` env var. The `id-token: write` permission lets npm authenticate via OIDC. Job-level `permissions` are set explicitly because trusted publishing only needs `contents: read` + `id-token: write` (not `packages: write`).
+
+**3. Clean up:**
+
+```bash
+# Delete the bootstrap token secret from GitHub
+gh secret delete NPM_TOKEN --repo schrecktech/sso-mocker
+
+# Revoke the token on npmjs.com
+# Go to npmjs.com → Access Tokens → delete "github-actions-bootstrap"
+```
 
 ## Step 4: Configure GitHub Container Registry (GHCR)
 
@@ -137,11 +217,16 @@ gh api repos/schrecktech/sso-mocker/branches/main/protection \
 
 ## Step 6: Add Repository Secrets
 
-The release workflow needs minimal secrets (it uses `GITHUB_TOKEN` for both npm and GHCR). However, staging/production deployments may need additional secrets.
+The release workflow uses `GITHUB_TOKEN` (automatic) for GitHub Packages and GHCR. The npmjs.com publish uses trusted publishing (OIDC) after initial setup — no stored secret needed.
 
-### 6a. Secrets needed for CI/release (none required)
+### 6a. Secrets needed for release
 
-The `release.yml` workflow uses `${{ secrets.GITHUB_TOKEN }}` which is automatically provided by GitHub Actions. No manual secret creation needed for npm or GHCR publishing.
+| Secret | Source | Purpose | Lifetime |
+|---|---|---|---|
+| `GITHUB_TOKEN` | Automatic | GitHub Packages (npm) + GHCR (Docker) | Permanent |
+| `NPM_TOKEN` | [Step 3b](#3b-set-up-the-npmjscom-organization-bootstrap-token) | Bootstrap first npmjs.com publish | Temporary — remove after [Step 3e](#3e-switch-to-trusted-publishing-after-first-publish) |
+
+After configuring trusted publishing ([Step 3e](#3e-switch-to-trusted-publishing-after-first-publish)), `NPM_TOKEN` is no longer needed and should be deleted.
 
 ### 6b. Secrets for staging/production (if deploying to EKS)
 
@@ -283,7 +368,7 @@ gh secret set PAGES_DEPLOY_TOKEN --body "ghp_your_token_here" --repo schrecktech
 
 1. Go to `https://github.com/schrecktech/sso-mocker/settings/actions`
 2. Under "Workflow permissions", select **Read and write permissions**
-   - This is needed for the release workflow to push packages to GHCR and npm
+   - This is needed for the release workflow to push packages to GHCR and GitHub Packages
 
 ## Step 9: Set Up Environments (Optional)
 
@@ -344,14 +429,21 @@ git push origin v0.1.0
 ```
 
 This triggers `release.yml` which:
-1. Publishes `@schrecktech/sso-mocker@0.1.0` to GitHub Packages (npm)
-2. Builds and pushes `ghcr.io/schrecktech/sso-mocker:v0.1.0` and `ghcr.io/schrecktech/sso-mocker:latest` to GHCR
+1. Publishes `@schrecktech/sso-mocker@0.1.0` to **npmjs.com** with provenance
+2. Publishes `@schrecktech/sso-mocker@0.1.0` to **GitHub Packages** (npm) with provenance
+3. Builds and pushes `ghcr.io/schrecktech/sso-mocker:v0.1.0` and `:latest` to GHCR
 
 ### 10c. Verify the release
 
 ```bash
-# Check npm package
+# Check npmjs.com package
+npm view @schrecktech/sso-mocker version
+
+# Check GitHub Packages
 npm view @schrecktech/sso-mocker --registry=https://npm.pkg.github.com
+
+# Check provenance attestation on npmjs.com
+# Visit https://www.npmjs.com/package/@schrecktech/sso-mocker — look for the "Provenance" badge
 
 # Check Docker image
 docker pull ghcr.io/schrecktech/sso-mocker:v0.1.0
@@ -366,18 +458,17 @@ gh release view v0.1.0
 
 For each repo that needs to use SSO Mocker:
 
-### 11a. Add `.npmrc` (if using npm package)
+### 11a. Add as dev dependency
 
 ```bash
-# In the consuming repo root
-echo "@schrecktech:registry=https://npm.pkg.github.com" > .npmrc
-```
-
-### 11b. Add as dev dependency (if using programmatic API)
-
-```bash
+# Installs from npmjs.com — no .npmrc needed
 npm install --save-dev @schrecktech/sso-mocker
 ```
+
+> **Alternatively**, to install from GitHub Packages, add a `.npmrc` first:
+> ```
+> @schrecktech:registry=https://npm.pkg.github.com
+> ```
 
 ### 11c. Add GitHub Actions workflow
 
@@ -500,9 +591,11 @@ After completing all steps, verify:
 - [ ] CI workflows run on pull requests (`test` and `check` jobs)
 - [ ] `fixtures-guard.yml` blocks PRs with production user fixtures
 - [ ] First version tag triggers `release.yml`
-- [ ] npm package is published to `https://github.com/orgs/schrecktech/packages/npm/sso-mocker`
+- [ ] npm package is published to npmjs.com (`npm view @schrecktech/sso-mocker`)
+- [ ] npm package is published to GitHub Packages (`npm view @schrecktech/sso-mocker --registry=https://npm.pkg.github.com`)
+- [ ] npm provenance badge appears on `https://www.npmjs.com/package/@schrecktech/sso-mocker`
 - [ ] Docker image is published to `https://github.com/orgs/schrecktech/packages/container/sso-mocker`
 - [ ] `https://schrecktech.github.io/.well-known/openid-configuration` returns the discovery JSON
 - [ ] A consuming repo can pull the Docker image in GitHub Actions
-- [ ] A consuming repo can install the npm package via `@schrecktech/sso-mocker`
+- [ ] A consuming repo can install the npm package via `npm install @schrecktech/sso-mocker`
 - [ ] Local dev works: `npx @schrecktech/sso-mocker start` or `docker run ghcr.io/schrecktech/sso-mocker:latest`
