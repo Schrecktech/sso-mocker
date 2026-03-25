@@ -14,6 +14,9 @@
     .user-name { font-weight: bold; }
     .user-meta { color: #666; font-size: 0.9em; }
     .client-info { margin-top: 20px; padding: 12px; background: #f8f8f8; border-radius: 6px; font-size: 0.85em; color: #555; }
+    .password-field { margin-top: 12px; }
+    .password-field label { font-size: 0.9em; color: #555; display: block; margin-bottom: 4px; }
+    .password-field input { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1em; }
     button { padding: 10px 24px; background: #0066cc; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; margin-top: 12px; }
     button:hover { background: #0052a3; }
   </style>
@@ -26,6 +29,10 @@
     <ul class="user-list">
       {{userList}}
     </ul>
+    <div class="password-field">
+      <label for="password">Password (optional)</label>
+      <input type="password" id="password" name="password" data-testid="password" placeholder="Any value accepted">
+    </div>
     <button type="submit" data-testid="sign-in">Sign In</button>
   </form>
   <div class="client-info">
