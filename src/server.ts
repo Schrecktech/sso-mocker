@@ -50,7 +50,7 @@ export async function createMocker(options: CreateMockerOptions = {}): Promise<M
 
   const port = options.port ?? config.server.port;
 
-  const provider = createProvider({
+  const provider = await createProvider({
     config,
     users,
     roles: config.roles,

@@ -32,19 +32,19 @@ runs:
     - uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
-        registry-url: 'https://npm.pkg.github.com'
 
-    - name: Install SSO Mocker
+    - name: Build SSO Mocker
       shell: bash
-      run: npm install -g @schrecktech/sso-mocker
-      env:
-        NODE_AUTH_TOKEN: ${{ github.token }}
+      working-directory: ${{ github.action_path }}
+      run: |
+        npm ci
+        npm run build
 
     - name: Start SSO Mocker
       id: start
       shell: bash
       run: |
-        sso-mocker start \
+        node "$GITHUB_ACTION_PATH/bin/sso-mocker.js" start \
           --env ${{ inputs.environment }} \
           --port ${{ inputs.port }} \
           --login-mode ${{ inputs.login-mode }} &
