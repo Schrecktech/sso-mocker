@@ -114,7 +114,7 @@ jobs:
 
 ```yaml
 steps:
-  - uses: Schrecktech/sso-mocker@v0.4.0
+  - uses: Schrecktech/sso-mocker@v0.5.0
     id: sso
     with:
       login-mode: auto
