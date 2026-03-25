@@ -13,7 +13,7 @@ interface ProviderOptions {
 }
 
 export async function createProvider({ config, users, roles, teams }: ProviderOptions): Promise<Provider> {
-  const registry = buildScopeRegistry(teams, config.clients);
+  const initialRegistry = buildScopeRegistry(teams, config.clients);
 
   const clients = config.clients.map((c) => ({
     client_id: c.clientId,
@@ -33,7 +33,7 @@ export async function createProvider({ config, users, roles, teams }: ProviderOp
       profile: ['name', 'role', 'teams', 'scopes', 'team_scopes'],
       email: ['email'],
     },
-    scopes: ['openid', 'profile', 'email', 'offline_access', ...registry],
+    scopes: ['openid', 'profile', 'email', 'offline_access', ...initialRegistry],
     conformIdTokenClaims: false,
     features: {
       devInteractions: { enabled: false },
@@ -47,7 +47,8 @@ export async function createProvider({ config, users, roles, teams }: ProviderOp
     findAccount: async (_ctx: unknown, id: string) => {
       const user = users.find((u) => u.id === id);
       if (!user) return undefined;
-      const userClaims = buildUserClaims(user, roles, teams, registry);
+      const currentRegistry = buildScopeRegistry(teams, config.clients);
+      const userClaims = buildUserClaims(user, roles, teams, currentRegistry);
       return {
         accountId: id,
         async claims(_use: string, _scope: string) {
