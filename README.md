@@ -62,6 +62,30 @@ jobs:
           OIDC_ISSUER: http://localhost:9090
 ```
 
+### GitHub Actions (Action)
+
+```yaml
+steps:
+  - uses: Schrecktech/sso-mocker@v0.1.0
+    id: sso
+    with:
+      login-mode: auto
+      auto-login-user: alice
+  - run: npm test
+    env:
+      OIDC_ISSUER: ${{ steps.sso.outputs.issuer }}
+```
+
+| Input | Default | Description |
+|---|---|---|
+| `environment` | `integration` | Config environment |
+| `port` | `9090` | HTTP port |
+| `login-mode` | `auto` | `auto` (CI) or `form` (user picker) |
+| `auto-login-user` | `alice` | User ID for auto-login mode |
+| `node-version` | `22` | Node.js version |
+
+**Output:** `issuer` — the OIDC issuer URL (e.g., `http://localhost:9090`)
+
 ### Programmatic (Test Suites)
 
 ```typescript

@@ -1,0 +1,56 @@
+name: 'SSO Mocker'
+description: 'Start a configurable OIDC mock provider for CI testing'
+branding:
+  icon: 'lock'
+  color: 'blue'
+
+inputs:
+  environment:
+    description: 'Config environment (development, integration, staging)'
+    default: 'integration'
+  port:
+    description: 'HTTP port'
+    default: '9090'
+  login-mode:
+    description: 'Login mode: auto (CI, zero interaction) or form (user picker)'
+    default: 'auto'
+  auto-login-user:
+    description: 'User ID for auto-login mode'
+    default: 'alice'
+  node-version:
+    description: 'Node.js version'
+    default: '22'
+
+outputs:
+  issuer:
+    description: 'OIDC issuer URL (use as OIDC_ISSUER env var in your tests)'
+    value: ${{ steps.start.outputs.issuer }}
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        registry-url: 'https://npm.pkg.github.com'
+
+    - name: Install SSO Mocker
+      shell: bash
+      run: npm install -g @schrecktech/sso-mocker
+      env:
+        NODE_AUTH_TOKEN: ${{ github.token }}
+
+    - name: Start SSO Mocker
+      id: start
+      shell: bash
+      run: |
+        sso-mocker start \
+          --env ${{ inputs.environment }} \
+          --port ${{ inputs.port }} \
+          --login-mode ${{ inputs.login-mode }} &
+        echo "Waiting for SSO Mocker to be ready..."
+        timeout 30 bash -c 'until curl -sf http://localhost:${{ inputs.port }}/health > /dev/null 2>&1; do sleep 1; done'
+        echo "SSO Mocker ready at http://localhost:${{ inputs.port }}"
+        echo "issuer=http://localhost:${{ inputs.port }}" >> $GITHUB_OUTPUT
+      env:
+        SSO_MOCKER_AUTO_LOGIN_USER: ${{ inputs.auto-login-user }}
