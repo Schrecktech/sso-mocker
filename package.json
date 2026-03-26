@@ -7,6 +7,15 @@
   "bin": {
     "sso-mocker": "bin/sso-mocker.js"
   },
+  "files": [
+    "dist/",
+    "bin/",
+    "config/",
+    "scripts/",
+    "action.yml",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc && cp -r src/ui/templates dist/ui/",
     "dev": "tsx src/server.ts",

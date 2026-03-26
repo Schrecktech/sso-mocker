@@ -53,14 +53,17 @@ runs:
           CONFIG_FLAG="--config $GITHUB_WORKSPACE/$SSO_CONFIG_DIR"
         fi
         node bin/sso-mocker.js start \
-          --env ${{ inputs.environment }} \
-          --port ${{ inputs.port }} \
-          --login-mode ${{ inputs.login-mode }} \
+          --env "$SSO_MOCKER_ENV" \
+          --port "$SSO_MOCKER_PORT" \
+          --login-mode "$SSO_MOCKER_LOGIN_MODE" \
           $CONFIG_FLAG &
         echo "Waiting for SSO Mocker to be ready..."
-        timeout 30 bash -c 'until curl -sf http://localhost:${{ inputs.port }}/health > /dev/null 2>&1; do sleep 1; done'
-        echo "SSO Mocker ready at http://localhost:${{ inputs.port }}"
-        echo "issuer=http://localhost:${{ inputs.port }}" >> $GITHUB_OUTPUT
+        timeout 30 bash -c "until curl -sf http://localhost:${SSO_MOCKER_PORT}/health > /dev/null 2>&1; do sleep 1; done"
+        echo "SSO Mocker ready at http://localhost:${SSO_MOCKER_PORT}"
+        echo "issuer=http://localhost:${SSO_MOCKER_PORT}" >> "$GITHUB_OUTPUT"
       env:
+        SSO_MOCKER_ENV: ${{ inputs.environment }}
+        SSO_MOCKER_PORT: ${{ inputs.port }}
+        SSO_MOCKER_LOGIN_MODE: ${{ inputs.login-mode }}
         SSO_MOCKER_AUTO_LOGIN_USER: ${{ inputs.auto-login-user }}
         SSO_CONFIG_DIR: ${{ inputs.config }}

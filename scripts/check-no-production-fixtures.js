@@ -8,6 +8,11 @@ if (existsSync('fixtures/production.users.yaml')) {
   failed = true;
 }
 
+if (existsSync('config/production.users.yaml')) {
+  console.error('ERROR: config/production.users.yaml must not exist.');
+  failed = true;
+}
+
 if (existsSync('config/production.yaml')) {
   const content = readFileSync('config/production.yaml', 'utf-8');
   const parsed = parse(content);
