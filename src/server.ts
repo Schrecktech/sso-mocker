@@ -61,8 +61,18 @@ export async function createMocker(options: CreateMockerOptions = {}): Promise<M
   // before the oidc-provider exec middleware
   provider.use(async (ctx, next) => {
     if (ctx.method === 'POST' && ctx.path.startsWith('/interaction/')) {
+      const maxBodySize = 1_048_576; // 1MB
       const chunks: Buffer[] = [];
-      for await (const chunk of ctx.req) chunks.push(chunk as Buffer);
+      let size = 0;
+      for await (const chunk of ctx.req) {
+        size += (chunk as Buffer).length;
+        if (size > maxBodySize) {
+          ctx.status = 413;
+          ctx.body = 'Request body too large';
+          return;
+        }
+        chunks.push(chunk as Buffer);
+      }
       const body = Buffer.concat(chunks).toString();
       const params = new URLSearchParams(body);
       (ctx.request as any).body = Object.fromEntries(params);

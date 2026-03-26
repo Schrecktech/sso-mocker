@@ -62,8 +62,18 @@ export function createAdminRouter({ config, users }: AdminRouterOptions): Router
   // JSON body parser middleware for admin routes
   router.use(async (ctx: Context, next: Next) => {
     if (ctx.method === 'POST' || ctx.method === 'PATCH' || ctx.method === 'PUT') {
+      const maxBodySize = 1_048_576; // 1MB
       const chunks: Buffer[] = [];
-      for await (const chunk of ctx.req) chunks.push(chunk as Buffer);
+      let size = 0;
+      for await (const chunk of ctx.req) {
+        size += (chunk as Buffer).length;
+        if (size > maxBodySize) {
+          ctx.status = 413;
+          ctx.body = { error: 'Request body too large' };
+          return;
+        }
+        chunks.push(chunk as Buffer);
+      }
       const raw = Buffer.concat(chunks).toString();
       if (raw.length > 0) {
         try {
