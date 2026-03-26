@@ -13,7 +13,7 @@ export function renderLoginPage(users: User[], action: string, clientId: string,
         <label>
           <input type="radio" name="user" value="${escapeHtml(u.id)}" ${i === 0 ? 'checked' : ''}>
           <span class="user-name">${escapeHtml(u.name)}</span>
-          <div class="user-meta">${escapeHtml(u.role)} &middot; ${u.teams.join(', ') || 'no teams'}</div>
+          <div class="user-meta">${escapeHtml(u.role)} &middot; ${u.teams.map(t => escapeHtml(t)).join(', ') || 'no teams'}</div>
         </label>
       </li>`)
     .join('\n');

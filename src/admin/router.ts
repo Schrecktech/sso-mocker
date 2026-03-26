@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import Router from '@koa/router';
 import type { Context, Next } from 'koa';
 import type { AppConfig, User, Role, Team } from '../config/schema.js';
@@ -61,8 +62,18 @@ export function createAdminRouter({ config, users }: AdminRouterOptions): Router
   // JSON body parser middleware for admin routes
   router.use(async (ctx: Context, next: Next) => {
     if (ctx.method === 'POST' || ctx.method === 'PATCH' || ctx.method === 'PUT') {
+      const maxBodySize = 1_048_576; // 1MB
       const chunks: Buffer[] = [];
-      for await (const chunk of ctx.req) chunks.push(chunk as Buffer);
+      let size = 0;
+      for await (const chunk of ctx.req) {
+        size += (chunk as Buffer).length;
+        if (size > maxBodySize) {
+          ctx.status = 413;
+          ctx.body = { error: 'Request body too large' };
+          return;
+        }
+        chunks.push(chunk as Buffer);
+      }
       const raw = Buffer.concat(chunks).toString();
       if (raw.length > 0) {
         try {
@@ -84,7 +95,9 @@ export function createAdminRouter({ config, users }: AdminRouterOptions): Router
     if (config.admin.apiKey) {
       const authHeader = ctx.get('authorization');
       const expected = `Bearer ${config.admin.apiKey}`;
-      if (authHeader !== expected) {
+      const a = Buffer.from(authHeader);
+      const b = Buffer.from(expected);
+      if (a.length !== b.length || !timingSafeEqual(a, b)) {
         ctx.status = 401;
         ctx.body = { error: 'Unauthorized: invalid or missing API key' };
         return;
