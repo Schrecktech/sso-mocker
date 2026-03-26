@@ -33,6 +33,7 @@ export async function createMocker(options: CreateMockerOptions = {}): Promise<M
   const loaded = await loadConfig({
     env,
     configDir,
+    fixturesDir: options.fixturesDir,
     overrides: {
       port: options.port,
       loginMode: options.loginMode,
