@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import Router from '@koa/router';
 import type { Context, Next } from 'koa';
 import type { AppConfig, User, Role, Team } from '../config/schema.js';
@@ -84,7 +85,9 @@ export function createAdminRouter({ config, users }: AdminRouterOptions): Router
     if (config.admin.apiKey) {
       const authHeader = ctx.get('authorization');
       const expected = `Bearer ${config.admin.apiKey}`;
-      if (authHeader !== expected) {
+      const a = Buffer.from(authHeader);
+      const b = Buffer.from(expected);
+      if (a.length !== b.length || !timingSafeEqual(a, b)) {
         ctx.status = 401;
         ctx.body = { error: 'Unauthorized: invalid or missing API key' };
         return;
