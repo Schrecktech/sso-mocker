@@ -14,9 +14,19 @@ spec:
       labels:
         app: sso-mocker
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
       containers:
         - name: sso-mocker
           image: ghcr.io/schrecktech/sso-mocker:latest
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 9090
           env:
@@ -42,6 +52,12 @@ spec:
                 secretKeyRef:
                   name: sso-mocker-secrets
                   key: admin-api-key
+                  optional: true
+            - name: COOKIE_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sso-mocker-secrets
+                  key: cookie-signing-key
                   optional: true
           readinessProbe:
             httpGet:
