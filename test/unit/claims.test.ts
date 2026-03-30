@@ -24,7 +24,7 @@ describe('buildUserClaims', () => {
     expect(claims.teams).toEqual(['engineering']);
     expect(claims.scopes).toContain('read:repos');
     expect(claims.scopes).toContain('write:invoices');
-    expect(claims.team_scopes.engineering).toEqual(['read:repos', 'write:repos', 'read:ci']);
+    expect(claims.team_scopes.engineering).toEqual(['read:ci', 'read:repos', 'write:repos']);
   });
   it('builds claims for viewer user', () => {
     const user: User = { id: 'carol', email: 'carol@example.com', name: 'Carol', role: 'viewer', teams: ['billing'] };
@@ -43,7 +43,7 @@ describe('buildUserClaims', () => {
   it('builds team_scopes map', () => {
     const user: User = { id: 'bob', email: 'b@b.com', name: 'B', role: 'viewer', teams: ['engineering', 'billing'] };
     const claims = buildUserClaims(user, roles, teams, REGISTRY);
-    expect(claims.team_scopes.engineering).toEqual(['read:repos', 'write:repos', 'read:ci']);
+    expect(claims.team_scopes.engineering).toEqual(['read:ci', 'read:repos', 'write:repos']);
     expect(claims.team_scopes.billing).toEqual(['read:invoices', 'write:invoices']);
   });
 });

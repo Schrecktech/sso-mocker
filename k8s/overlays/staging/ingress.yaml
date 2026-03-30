@@ -2,9 +2,8 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: sso-mocker
-  annotations:
-    kubernetes.io/ingress.class: alb
 spec:
+  ingressClassName: alb
   rules:
     - host: sso-mocker.staging.example.com
       http:

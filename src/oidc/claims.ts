@@ -1,5 +1,5 @@
 import type { User, Role, Team } from '../config/schema.js';
-import { resolveEffectiveScopes } from './scopes.js';
+import { resolveEffectiveScopes, expandWildcard } from './scopes.js';
 
 export interface UserClaims {
   sub: string;
@@ -18,7 +18,13 @@ export function buildUserClaims(
   const teamScopes: Record<string, string[]> = {};
   for (const teamId of user.teams) {
     const team = teams.find((t) => t.id === teamId);
-    if (team) teamScopes[teamId] = [...team.scopes];
+    if (team) {
+      const expanded = new Set<string>();
+      for (const scope of team.scopes) {
+        for (const s of expandWildcard(scope, registry)) expanded.add(s);
+      }
+      teamScopes[teamId] = [...expanded].sort();
+    }
   }
   return {
     sub: user.id,
