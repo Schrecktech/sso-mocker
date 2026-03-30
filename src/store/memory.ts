@@ -22,7 +22,7 @@ export class MemoryAdapter {
   async upsert(id: string, payload: Record<string, unknown>, expiresIn: number): Promise<void> {
     this.store.set(id, {
       payload: { ...payload },
-      expiresAt: Date.now() + expiresIn * 1000,
+      expiresAt: expiresIn ? Date.now() + expiresIn * 1000 : Infinity,
     });
   }
 

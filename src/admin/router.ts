@@ -34,6 +34,15 @@ function deepCloneLoginConfig(config: AppConfig['login']): AppConfig['login'] {
   return { ...config };
 }
 
+function deepCloneClients(clients: AppConfig['clients']): AppConfig['clients'] {
+  return clients.map((c) => ({
+    ...c,
+    redirectUris: [...c.redirectUris],
+    grantTypes: [...c.grantTypes],
+    scopes: [...c.scopes],
+  }));
+}
+
 function formatZodError(err: ZodError): string {
   return err.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
 }
@@ -51,7 +60,7 @@ export function createAdminRouter({ config, users }: AdminRouterOptions): Router
     users,
     config,
     baselineUsers: deepCloneUsers(users),
-    baselineConfig: { ...config, login: deepCloneLoginConfig(config.login) },
+    baselineConfig: { ...config, login: deepCloneLoginConfig(config.login), clients: deepCloneClients(config.clients) },
   };
 
   const userHandlers = createUserHandlers(state);
@@ -192,6 +201,12 @@ export function createAdminRouter({ config, users }: AdminRouterOptions): Router
     state.config.teams.length = 0;
     for (const t of deepCloneTeams(baselineTeams)) {
       state.config.teams.push(t);
+    }
+
+    // Restore clients to baseline
+    state.config.clients.length = 0;
+    for (const c of deepCloneClients(state.baselineConfig.clients)) {
+      state.config.clients.push(c);
     }
 
     // Restore login config to baseline
