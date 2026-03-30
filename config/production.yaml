@@ -12,6 +12,10 @@ login:
 signing:
   keys: "${SIGNING_KEYS_JSON}"
 
+cookies:
+  keys:
+    - "${COOKIE_SIGNING_KEY}"
+
 admin:
   enabled: true
   apiKey: "${ADMIN_API_KEY}"

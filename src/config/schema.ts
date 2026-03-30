@@ -23,6 +23,10 @@ export const SigningSchema = z.object({
   keys: z.any().default([]),
 });
 
+export const CookiesSchema = z.object({
+  keys: z.array(z.string()).default(['sso-mocker-cookie-key']),
+});
+
 export const TokensSchema = z.object({
   idToken: z.object({ ttl: z.number().int().positive().default(3600) }).default({ ttl: 3600 }),
   accessToken: z.object({
@@ -82,6 +86,7 @@ export const AppConfigSchema = z.object({
   storage: StorageSchema.default({ adapter: 'memory' }),
   login: LoginSchema.default({ mode: 'form', autoLoginUser: 'alice' }),
   signing: SigningSchema.default({ keys: [] }),
+  cookies: CookiesSchema.default({ keys: ['sso-mocker-cookie-key'] }),
   tokens: TokensSchema.default({
     idToken: { ttl: 3600 },
     accessToken: { ttl: 3600, format: 'jwt' },

@@ -54,6 +54,7 @@ describe('loadConfig', () => {
     vi.stubEnv('REDIS_URL', 'redis://localhost');
     vi.stubEnv('SIGNING_KEYS_JSON', '[]');
     vi.stubEnv('ADMIN_API_KEY', 'secret');
+    vi.stubEnv('COOKIE_SIGNING_KEY', 'test-cookie-key');
     await expect(
       loadConfig({
         env: 'production',
@@ -68,6 +69,7 @@ describe('loadConfig', () => {
     vi.stubEnv('REDIS_URL', 'redis://localhost');
     vi.stubEnv('SIGNING_KEYS_JSON', '[]');
     vi.stubEnv('ADMIN_API_KEY', '');
+    vi.stubEnv('COOKIE_SIGNING_KEY', 'test-cookie-key');
     await expect(
       loadConfig({
         env: 'production',

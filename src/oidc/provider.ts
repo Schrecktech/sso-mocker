@@ -60,7 +60,7 @@ export async function createProvider({ config, users, roles, teams }: ProviderOp
       url: (_ctx: unknown, interaction: { uid: string }) => `/interaction/${interaction.uid}`,
     },
     cookies: {
-      keys: ['sso-mocker-cookie-key'],
+      keys: config.cookies.keys,
     },
   };
 
