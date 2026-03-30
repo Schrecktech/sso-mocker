@@ -1,6 +1,7 @@
 services:
   sso-mocker:
     build: .
+    command: ["--env", "staging"]
     deploy:
       replicas: 2
     ports:
@@ -8,6 +9,9 @@ services:
     environment:
       SSO_MOCKER_ENV: staging
       REDIS_URL: redis://redis:6379
+      SIGNING_KEYS_JSON: ${SIGNING_KEYS_JSON}
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
+      COOKIE_SIGNING_KEY: ${COOKIE_SIGNING_KEY}
     depends_on:
       - redis
 
