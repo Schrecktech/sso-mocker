@@ -15,7 +15,6 @@ async function handleLogin(
   req: import('http').IncomingMessage,
   res: import('http').ServerResponse,
   accountId: string,
-  details: Awaited<ReturnType<Provider['interactionDetails']>>,
 ): Promise<void> {
   const result: Record<string, unknown> = {
     login: { accountId },
@@ -52,12 +51,7 @@ async function handleConsent(
 
   const grantId = await grant.save();
 
-  const result: Record<string, unknown> = {};
-  if (!details.grantId) {
-    result.consent = { grantId };
-  } else {
-    result.consent = { grantId };
-  }
+  const result: Record<string, unknown> = { consent: { grantId } };
 
   await provider.interactionFinished(req, res, result, { mergeWithLastSubmission: true });
 }
@@ -82,7 +76,7 @@ export function mountInteractions({ provider, router, getUsers, getLoginMode }: 
         ctx.body = `autoLoginUser '${loginConfig.autoLoginUser}' not found`;
         return;
       }
-      await handleLogin(provider, ctx.req, ctx.res, user.id, details);
+      await handleLogin(provider, ctx.req, ctx.res, user.id);
       return;
     }
 
@@ -103,6 +97,6 @@ export function mountInteractions({ provider, router, getUsers, getLoginMode }: 
       return;
     }
     const details = await provider.interactionDetails(ctx.req, ctx.res);
-    await handleLogin(provider, ctx.req, ctx.res, userId, details);
+    await handleLogin(provider, ctx.req, ctx.res, userId);
   });
 }

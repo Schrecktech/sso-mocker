@@ -1,8 +1,7 @@
 import type { Context } from 'koa';
 import type { User, AppConfig } from '../../config/schema.js';
 import { resolveEffectiveScopes, buildScopeRegistry } from '../../oidc/scopes.js';
-import { CreateUserBody, PatchUserBody } from '../validation.js';
-import { ZodError } from 'zod';
+import { CreateUserBody, PatchUserBody, formatZodError } from '../validation.js';
 
 export interface AdminState {
   users: User[];
@@ -18,10 +17,6 @@ function userWithEffectiveScopes(user: User, config: AppConfig) {
     ...user,
     effectiveScopes: [...scopes].sort(),
   };
-}
-
-function formatZodError(err: ZodError): string {
-  return err.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
 }
 
 export function createUserHandlers(state: AdminState) {

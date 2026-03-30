@@ -6,8 +6,7 @@ import { MemoryAdapter } from '../store/memory.js';
 import { createUserHandlers, type AdminState } from './handlers/users.js';
 import { createRoleHandlers } from './handlers/roles.js';
 import { createTeamHandlers } from './handlers/teams.js';
-import { PatchLoginConfigBody, ImportBody } from './validation.js';
-import { ZodError } from 'zod';
+import { PatchLoginConfigBody, ImportBody, formatZodError } from './validation.js';
 
 function deepCloneUsers(users: User[]): User[] {
   return users.map((u) => ({
@@ -41,10 +40,6 @@ function deepCloneClients(clients: AppConfig['clients']): AppConfig['clients'] {
     grantTypes: [...c.grantTypes],
     scopes: [...c.scopes],
   }));
-}
-
-function formatZodError(err: ZodError): string {
-  return err.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
 }
 
 export interface AdminRouterOptions {

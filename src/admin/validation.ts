@@ -1,4 +1,8 @@
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
+
+export function formatZodError(err: ZodError): string {
+  return err.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
+}
 
 export const CreateUserBody = z.object({
   id: z.string().min(1),

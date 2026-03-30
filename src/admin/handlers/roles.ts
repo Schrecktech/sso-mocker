@@ -1,11 +1,6 @@
 import type { Context } from 'koa';
 import type { AdminState } from './users.js';
-import { CreateRoleBody, PatchRoleBody } from '../validation.js';
-import { ZodError } from 'zod';
-
-function formatZodError(err: ZodError): string {
-  return err.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
-}
+import { CreateRoleBody, PatchRoleBody, formatZodError } from '../validation.js';
 
 export function createRoleHandlers(state: AdminState) {
   return {
